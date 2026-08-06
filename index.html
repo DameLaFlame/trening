@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <!-- viewport-fit=cover -> aplikacja wchodzi pod "notch" na iPhonie -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0d0f12">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Trening</title>
+
+  <!-- PWA: dzięki temu aplikację da się dodać do ekranu początkowego iPhone'a -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./ikona-180.png">
+  <link rel="icon" href="./ikona-192.png" type="image/png">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===================== GÓRNY PASEK ===================== -->
+  <header class="naglowek">
+    <h1 id="tytul-ekranu">Trening</h1>
+  </header>
+
+  <!-- ===================== EKRANY ===================== -->
+  <main id="tresc">
+
+    <!-- ---------- 1. TRENING ---------- -->
+    <section class="ekran" id="ekran-trening">
+
+      <!-- widok A: nie ma rozpoczętego treningu -->
+      <div id="trening-start">
+        <button class="przycisk duzy" id="btn-rozpocznij">Rozpocznij trening</button>
+
+        <p class="podpis">Moje zestawy</p>
+        <ul class="lista" id="lista-zestawow"></ul>
+        <button class="przycisk wtorny" id="btn-nowy-zestaw">+ Nowy zestaw</button>
+
+        <div id="podsumowanie-ostatniego"></div>
+      </div>
+
+      <!-- widok C: układanie zestawu -->
+      <div id="zestaw-edycja" hidden>
+        <div class="karta">
+          <label class="pole">
+            <span>Nazwa zestawu</span>
+            <input type="text" id="pole-nazwy-zestawu" placeholder="np. Push A"
+                   autocomplete="off" autocapitalize="sentences">
+          </label>
+        </div>
+
+        <p class="podpis">Ćwiczenia w zestawie</p>
+        <ul class="lista" id="lista-zestawu"></ul>
+
+        <button class="przycisk wtorny" id="btn-dodaj-do-zestawu">+ Dodaj ćwiczenie</button>
+        <button class="przycisk zielony" id="btn-zapisz-zestaw">Zapisz zestaw</button>
+        <button class="przycisk tekstowy neutralny" id="btn-anuluj-zestaw">Anuluj</button>
+        <button class="przycisk tekstowy" id="btn-usun-zestaw">Usuń zestaw</button>
+      </div>
+
+      <!-- widok B: trening trwa -->
+      <div id="trening-wtoku" hidden>
+        <div class="pasek-stanu">
+          <span class="kropka"></span>
+          <span id="opis-treningu">Trening trwa</span>
+        </div>
+
+        <div id="cwiczenia-treningu"></div>
+
+        <button class="przycisk wtorny" id="btn-dodaj-cwiczenie">+ Dodaj ćwiczenie</button>
+        <button class="przycisk zielony" id="btn-zakoncz">Zakończ trening</button>
+        <button class="przycisk tekstowy" id="btn-anuluj">Anuluj trening</button>
+      </div>
+
+    </section>
+
+    <!-- ---------- 2. ĆWICZENIA ---------- -->
+    <section class="ekran" id="ekran-cwiczenia" hidden>
+      <div class="karta">
+        <label class="pole">
+          <span>Nowe ćwiczenie</span>
+          <input type="text" id="nowe-cwiczenie" placeholder="np. Wyciskanie francuskie"
+                 autocomplete="off" autocapitalize="sentences">
+        </label>
+        <button class="przycisk" id="btn-dodaj-do-listy">Dodaj do listy</button>
+      </div>
+
+      <p class="podpis">Moje ćwiczenia (<span id="ile-cwiczen">0</span>)</p>
+      <ul class="lista" id="lista-cwiczen"></ul>
+    </section>
+
+    <!-- ---------- 3. WAGA ---------- -->
+    <section class="ekran" id="ekran-waga" hidden>
+
+      <div class="karta">
+        <label class="pole">
+          <span>Waga (kg)</span>
+          <input type="text" id="pole-wagi" inputmode="decimal" autocomplete="off"
+                 placeholder="np. 82,4">
+        </label>
+        <label class="pole odstep">
+          <span>Data pomiaru</span>
+          <input type="date" id="pole-daty-wagi">
+        </label>
+        <button class="przycisk" id="btn-zapisz-wage">Zapisz pomiar</button>
+      </div>
+
+      <div class="przelacznik" id="przelacznik-skali">
+        <button data-skala="dzien">Dziennie</button>
+        <button data-skala="tydzien">Tygodniowo</button>
+        <button data-skala="miesiac">Miesięcznie</button>
+      </div>
+
+      <div id="waga-podsumowanie"></div>
+      <div id="waga-wykres"></div>
+
+      <p class="podpis"><span id="podpis-listy">Pomiary</span>
+        (<span id="ile-pomiarow">0</span>)</p>
+      <ul class="lista" id="lista-pomiarow"></ul>
+
+    </section>
+
+    <!-- ---------- 4. HISTORIA ---------- -->
+    <section class="ekran" id="ekran-historia" hidden>
+
+      <!-- widok A: lista treningów -->
+      <div id="historia-lista">
+        <p class="podpis">Zapisane treningi (<span id="ile-treningow">0</span>)</p>
+        <ul class="lista" id="lista-treningow"></ul>
+      </div>
+
+      <!-- widok B: szczegóły jednego treningu (podgląd albo poprawianie) -->
+      <div id="historia-szczegoly" hidden>
+        <button class="przycisk wtorny" id="btn-wroc-historia">← Wróć do listy</button>
+        <div id="szczegoly-tresc"></div>
+      </div>
+
+    </section>
+
+    <!-- ---------- 5. PROGRES ---------- -->
+    <section class="ekran" id="ekran-progres" hidden>
+
+      <!-- widok A: lista ćwiczeń z rekordami -->
+      <div id="progres-lista">
+        <p class="podpis">Wybierz ćwiczenie</p>
+        <ul class="lista" id="lista-progresu"></ul>
+      </div>
+
+      <!-- widok B: szczegóły jednego ćwiczenia -->
+      <div id="progres-szczegoly" hidden>
+        <button class="przycisk wtorny" id="btn-wroc-progres">← Inne ćwiczenie</button>
+        <div id="progres-tresc"></div>
+      </div>
+
+    </section>
+
+    <!-- ---------- 6. USTAWIENIA ---------- -->
+    <section class="ekran" id="ekran-ustawienia" hidden>
+      <p class="podpis">Co siedzi teraz w pamięci telefonu</p>
+      <div class="karta">
+        <div class="wiersz-info"><span>Ćwiczenia</span><b id="licznik-cwiczen">0</b></div>
+        <div class="wiersz-info"><span>Zestawy</span><b id="licznik-zestawow">0</b></div>
+        <div class="wiersz-info"><span>Zapisane treningi</span><b id="licznik-treningow">0</b></div>
+        <div class="wiersz-info"><span>Pomiary wagi</span><b id="licznik-wagi">0</b></div>
+        <div class="wiersz-info"><span>Rozpoczęty trening</span><b id="licznik-aktywny">nie</b></div>
+        <div class="wiersz-info"><span>Zajęte miejsce</span><b id="licznik-rozmiar">0 KB</b></div>
+      </div>
+
+      <p class="podpis">Tryb offline</p>
+      <div class="karta">
+        <div class="wiersz-info"><span>Kopia aplikacji w telefonie</span><b id="stan-offline">sprawdzam…</b></div>
+        <p class="opis" id="opis-offline"></p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===================== OKNO WYBORU ĆWICZENIA ===================== -->
+  <div class="nakladka" id="okno-wyboru" hidden>
+    <div class="okno">
+      <div class="okno-naglowek">
+        <h2 id="tytul-okna-wyboru">Wybierz ćwiczenie</h2>
+        <button class="przycisk-zamknij" id="btn-zamknij-wybor">Zamknij</button>
+      </div>
+      <div class="okno-tresc">
+        <ul class="lista" id="lista-wyboru"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== OKNO PYTANIA / KOMUNIKATU ===================== -->
+  <div class="nakladka nakladka-srodek" id="okno-pytania" hidden>
+    <div class="okno okno-male">
+      <p id="tresc-pytania"></p>
+      <button class="przycisk" id="btn-potwierdz">OK</button>
+      <button class="przycisk wtorny" id="btn-odrzuc">Anuluj</button>
+    </div>
+  </div>
+
+  <!-- ===================== DOLNY PASEK ZAKŁADEK ===================== -->
+  <nav class="zakladki" id="zakladki">
+    <button class="zakladka" data-ekran="trening">
+      <span class="ikona">🏋️</span><span class="etykieta">Trening</span>
+    </button>
+    <button class="zakladka" data-ekran="cwiczenia">
+      <span class="ikona">📋</span><span class="etykieta">Ćwicz.</span>
+    </button>
+    <button class="zakladka" data-ekran="waga">
+      <span class="ikona">⚖️</span><span class="etykieta">Waga</span>
+    </button>
+    <button class="zakladka" data-ekran="historia">
+      <span class="ikona">🕘</span><span class="etykieta">Historia</span>
+    </button>
+    <button class="zakladka" data-ekran="progres">
+      <span class="ikona">📈</span><span class="etykieta">Progres</span>
+    </button>
+    <button class="zakladka" data-ekran="ustawienia">
+      <span class="ikona">⚙️</span><span class="etykieta">Ustaw.</span>
+    </button>
+  </nav>
+
+  <script src="storage.js"></script>
+  <script src="okna.js"></script>
+  <script src="wykres.js"></script>
+  <script src="edytor.js"></script>
+  <script src="cwiczenia.js"></script>
+  <script src="zestawy.js"></script>
+  <script src="trening.js"></script>
+  <script src="historia.js"></script>
+  <script src="waga.js"></script>
+  <script src="progres.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
