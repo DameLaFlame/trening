@@ -10,7 +10,7 @@
    którą już ma.
    ========================================================================== */
 
-const WERSJA = 'silownia-v1';
+const WERSJA = 'silownia-v2';
 
 /* Ścieżki są względne („./”), żeby aplikacja działała też w podkatalogu —
    a tak właśnie wygląda adres na GitHub Pages. */
@@ -28,6 +28,7 @@ const PLIKI = [
   './historia.js',
   './waga.js',
   './progres.js',
+  './kopia.js',
   './app.js',
   './manifest.json',
   './ikona-180.png',

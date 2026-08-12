@@ -182,6 +182,28 @@ zamiast na stronie wgrywania. Nie przeciągaj — wejdź na
 Nie kliknąłeś zielonego **Commit changes** na dole strony. Samo wybranie plików
 niczego nie zapisuje.
 
+**Błąd „The custom domain … is not properly formatted"**
+Adres wylądował w polu **Custom domain** na stronie Settings → Pages. To pole
+służy do czegoś zupełnie innego (własna domena typu `mojastrona.pl`) i ma
+zostać **puste**. Adresy z tej instrukcji wpisuje się w **pasek adresu
+przeglądarki**, na samej górze okna. Zamknij komunikat krzyżykiem i zostaw
+pole Custom domain puste.
+
+**Strona daje 404, a w zakładce Actions build wisi w „queued" albo jest czerwony**
+Najpierw sprawdź **https://www.githubstatus.com** — jeśli przy „Actions" albo
+„Pages" świeci się coś innego niż zielone „Operational", to awaria po stronie
+GitHuba i trzeba poczekać.
+
+Gdy awaria minie, **nieudany build trzeba powtórzyć ręcznie** — sam się nie
+uruchomi. Zakładka **Actions** → kliknij wpis „pages build and deployment" →
+**Re-run all jobs** w prawym górnym rogu.
+
+Alternatywnie wgraj jakikolwiek plik, bo każde wgranie uruchamia build od nowa.
+Dobrym kandydatem jest pusty plik `.nojekyll`: **Add file** → **Create new
+file** → nazwa `.nojekyll` (z kropką z przodu), treść pusta → **Commit
+changes**. Wyłącza on niepotrzebne przetwarzanie strony przez GitHuba —
+aplikacja to gotowy HTML i żadnej obróbki nie wymaga.
+
 **Widzę 404 zamiast aplikacji**
 Sprawdź, czy `index.html` leży bezpośrednio w projekcie, a nie w folderze.
 Wejdź na `https://github.com/TWOJA-NAZWA/trening` — na liście plików musi być

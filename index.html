@@ -167,10 +167,36 @@
         <div class="wiersz-info"><span>Zajęte miejsce</span><b id="licznik-rozmiar">0 KB</b></div>
       </div>
 
+      <p class="podpis">Kopia zapasowa</p>
+      <div class="karta">
+        <div class="wiersz-info"><span>Ostatnia kopia</span><b id="stan-kopii">—</b></div>
+        <p class="opis">Zapisuje wszystkie dane do pliku. Na iPhonie wybierz
+          „Zapisz w Plikach” — najlepiej w iCloud Drive, wtedy kopia przetrwa
+          nawet zmianę telefonu.</p>
+        <button class="przycisk" id="btn-zapisz-kopie">Zapisz kopię do pliku</button>
+        <button class="przycisk wtorny" id="btn-wczytaj-kopie">Wczytaj kopię z pliku</button>
+        <input type="file" id="plik-kopii" accept="application/json,.json" hidden>
+      </div>
+
+      <p class="podpis">Przypominaj o kopii</p>
+      <div class="przelacznik" id="przelacznik-przypomnien">
+        <button data-odstep="dzien">Dzień</button>
+        <button data-odstep="tydzien">Tydzień</button>
+        <button data-odstep="miesiac">Miesiąc</button>
+        <button data-odstep="nigdy">Nigdy</button>
+      </div>
+
       <p class="podpis">Tryb offline</p>
       <div class="karta">
         <div class="wiersz-info"><span>Kopia aplikacji w telefonie</span><b id="stan-offline">sprawdzam…</b></div>
         <p class="opis" id="opis-offline"></p>
+      </div>
+
+      <p class="podpis">Kasowanie danych</p>
+      <div class="karta">
+        <p class="opis">Kasuje treningi, zestawy, pomiary wagi i listę ćwiczeń.
+          Zrób najpierw kopię.</p>
+        <button class="przycisk czerwony" id="btn-usun-wszystko">Usuń wszystkie dane</button>
       </div>
     </section>
 
@@ -230,6 +256,7 @@
   <script src="historia.js"></script>
   <script src="waga.js"></script>
   <script src="progres.js"></script>
+  <script src="kopia.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

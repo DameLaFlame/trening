@@ -50,6 +50,9 @@ function rysujEkranStartu() {
   const miejsce = el('podsumowanie-ostatniego');
   miejsce.innerHTML = '';
 
+  const przypomnienie = pasekPrzypomnienia();
+  if (przypomnienie) miejsce.appendChild(przypomnienie);
+
   const ostatni = treningiOdNajnowszych()[0];
   const karta = document.createElement('div');
 

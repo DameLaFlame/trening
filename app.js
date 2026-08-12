@@ -66,6 +66,7 @@ function rysujUstawienia() {
   el('licznik-aktywny').textContent   = dane.aktywnyTrening ? 'tak' : 'nie';
   el('licznik-rozmiar').textContent   = rozmiarDanych();
 
+  rysujKopie();
   pokazStanOffline();
 }
 
@@ -128,6 +129,7 @@ function start() {
   podepnijHistorie();
   podepnijWage();
   podepnijProgres();
+  podepnijKopie();
 
   // Rozpoczęty trening jest ważniejszy niż ostatnio oglądana zakładka —
   // po ponownym otwarciu aplikacji wracamy prosto do niego.

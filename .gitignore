@@ -1,0 +1,3 @@
+# ustawienia lokalne Claude Code — nie są częścią aplikacji
+.claude/
+.DS_Store

@@ -108,7 +108,9 @@ function pustaBaza() {
     pomiaryWagi: [],       // waga ciała
     ustawienia: {
       ostatniaZakladka: 'trening',
-      skalaWagi: 'dzien'   // dzien | tydzien | miesiac
+      skalaWagi: 'dzien',        // dzien | tydzien | miesiac
+      ostatniaKopia: null,       // kiedy ostatnio zapisano kopię danych
+      przypominajOKopii: 'tydzien'   // dzien | tydzien | miesiac | nigdy
     }
   };
 }
