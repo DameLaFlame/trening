@@ -150,7 +150,27 @@ Powinna otworzyć się na pełnym ekranie, bez paska adresu — jak zwykła apli
 
 ---
 
-## Jak wgrać późniejsze poprawki
+## Jak wgrać poprawki przez GitHub Desktop (tak robimy teraz)
+
+Od momentu, gdy folder `Gym App` jest połączony z GitHubem, wgrywanie zmian
+to jedno kliknięcie:
+
+1. Otwórz **GitHub Desktop**.
+2. Jeśli projektu nie ma jeszcze na liście: **File → Add Local Repository…**
+   (skrót **Cmd+O**) → **Choose…** → wskaż `Documents/Damian/Gym App` →
+   **Add Repository**.
+   Można też kliknąć **Current Repository** w lewym górnym rogu → **Add** →
+   **Add Existing Repository…**
+3. Na górze okna pojawi się **Push origin** z liczbą commitów. Kliknij.
+4. Poczekaj minutę i odśwież aplikację na telefonie (dwa razy).
+
+> **Od teraz nie wgrywaj plików przez stronę GitHuba.** Mieszanie obu sposobów
+> rozjeżdża historię projektu i trzeba to potem prostować. Wybieramy jeden:
+> GitHub Desktop.
+
+---
+
+## Wgrywanie przez przeglądarkę (sposób zapasowy)
 
 Za każdym razem, gdy coś w aplikacji zmienimy:
 
@@ -203,6 +223,15 @@ Dobrym kandydatem jest pusty plik `.nojekyll`: **Add file** → **Create new
 file** → nazwa `.nojekyll` (z kropką z przodu), treść pusta → **Commit
 changes**. Wyłącza on niepotrzebne przetwarzanie strony przez GitHuba —
 aplikacja to gotowy HTML i żadnej obróbki nie wymaga.
+
+**Wgrałem pliki, a aplikacja się nie zmieniła**
+Najczęstsza przyczyna: przeciągnięcie na stronę GitHuba **całego folderu**
+zamiast samych plików. Wtedy powstaje podkatalog (np. `Gym App/`) obok
+aplikacji, a pliki w katalogu głównym zostają stare — GitHub Pages nadal
+pokazuje starą wersję. Wejdź na `https://github.com/DameLaFlame/trening`
+i sprawdź, czy na liście nie ma dodatkowego folderu.
+
+Druga możliwość: nie podniesiony numer wersji w `sw.js` (patrz niżej).
 
 **Widzę 404 zamiast aplikacji**
 Sprawdź, czy `index.html` leży bezpośrednio w projekcie, a nie w folderze.
