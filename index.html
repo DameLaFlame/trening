@@ -77,17 +77,45 @@
 
     <!-- ---------- 2. ĆWICZENIA ---------- -->
     <section class="ekran" id="ekran-cwiczenia" hidden>
-      <div class="karta">
-        <label class="pole">
-          <span>Nowe ćwiczenie</span>
-          <input type="text" id="nowe-cwiczenie" placeholder="np. Wyciskanie francuskie"
-                 autocomplete="off" autocapitalize="sentences">
-        </label>
-        <button class="przycisk" id="btn-dodaj-do-listy">Dodaj do listy</button>
+
+      <!-- widok A: lista ćwiczeń pogrupowana po kategoriach -->
+      <div id="cwiczenia-lista">
+        <div class="karta">
+          <label class="pole">
+            <span>Nowe ćwiczenie</span>
+            <input type="text" id="nowe-cwiczenie" placeholder="np. Biceps Curl"
+                   autocomplete="off" autocapitalize="sentences">
+          </label>
+          <label class="pole odstep">
+            <span>Kategoria</span>
+            <select id="nowa-cwiczenie-kategoria"></select>
+          </label>
+          <button class="przycisk" id="btn-dodaj-do-listy">Dodaj do listy</button>
+        </div>
+
+        <button class="przycisk wtorny" id="btn-kategorie">Zarządzaj kategoriami</button>
+
+        <p class="podpis">Moje ćwiczenia (<span id="ile-cwiczen">0</span>)</p>
+        <div id="lista-cwiczen"></div>
       </div>
 
-      <p class="podpis">Moje ćwiczenia (<span id="ile-cwiczen">0</span>)</p>
-      <ul class="lista" id="lista-cwiczen"></ul>
+      <!-- widok B: kategorie -->
+      <div id="cwiczenia-kategorie" hidden>
+        <button class="przycisk wtorny" id="btn-wroc-cwiczenia">← Wróć do ćwiczeń</button>
+
+        <div class="karta">
+          <label class="pole">
+            <span>Nowa kategoria</span>
+            <input type="text" id="nowa-kategoria-nazwa" placeholder="np. Przedramiona"
+                   autocomplete="off" autocapitalize="sentences">
+          </label>
+          <button class="przycisk" id="btn-dodaj-kategorie">Dodaj kategorię</button>
+        </div>
+
+        <p class="podpis">Kategorie (<span id="ile-kategorii">0</span>)</p>
+        <ul class="lista" id="lista-kategorii"></ul>
+      </div>
+
     </section>
 
     <!-- ---------- 3. WAGA ---------- -->
@@ -250,6 +278,7 @@
   <script src="okna.js"></script>
   <script src="wykres.js"></script>
   <script src="edytor.js"></script>
+  <script src="kategorie.js"></script>
   <script src="cwiczenia.js"></script>
   <script src="zestawy.js"></script>
   <script src="trening.js"></script>

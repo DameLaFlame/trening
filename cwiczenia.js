@@ -1,5 +1,6 @@
 /* ==========================================================================
-   cwiczenia.js — ekran „Ćwiczenia”: dodawanie, zmiana nazwy, usuwanie
+   cwiczenia.js — ekran „Ćwiczenia”: dodawanie, zmiana nazwy i kategorii,
+                  usuwanie. Lista jest pogrupowana po kategoriach.
    ========================================================================== */
 
 /* Które ćwiczenie jest właśnie edytowane (null = żadne). */
@@ -10,67 +11,104 @@ function znajdzCwiczenie(id) {
   return dane.cwiczenia.find(c => c.id === id) || null;
 }
 
+/* Ćwiczenia poukładane w grupy: [{ kategoria, cwiczenia: [...] }].
+   Kolejność grup jak na liście kategorii, „Bez kategorii” na końcu. */
+function cwiczeniaWGrupach() {
+  const grupy = dane.kategorie.map(kategoria => ({
+    id: kategoria.id,
+    nazwa: kategoria.nazwa,
+    cwiczenia: dane.cwiczenia.filter(c => c.kategoriaId === kategoria.id)
+  }));
+
+  const bezKategorii = dane.cwiczenia.filter(c => !znajdzKategorie(c.kategoriaId));
+  if (bezKategorii.length > 0) {
+    grupy.push({ id: null, nazwa: 'Bez kategorii', cwiczenia: bezKategorii });
+  }
+
+  return grupy.filter(grupa => grupa.cwiczenia.length > 0);
+}
+
 /* --------------------------------------------------------------------------
    Rysowanie listy
    -------------------------------------------------------------------------- */
 function rysujCwiczenia() {
-  const lista = el('lista-cwiczen');
-  lista.innerHTML = '';
+  wypelnijListeKategorii(el('nowa-cwiczenie-kategoria'), el('nowa-cwiczenie-kategoria').value);
+
+  const miejsce = el('lista-cwiczen');
+  miejsce.innerHTML = '';
   el('ile-cwiczen').textContent = dane.cwiczenia.length;
 
   if (dane.cwiczenia.length === 0) {
-    lista.innerHTML = '<li class="pusty-wpis">Lista jest pusta — dodaj pierwsze ćwiczenie.</li>';
+    miejsce.innerHTML = '<ul class="lista"><li class="pusty-wpis">' +
+                        'Lista jest pusta — dodaj pierwsze ćwiczenie.</li></ul>';
     return;
   }
 
-  dane.cwiczenia.forEach(cwiczenie => {
-    const pozycja = document.createElement('li');
+  cwiczeniaWGrupach().forEach(grupa => {
+    const naglowek = document.createElement('p');
+    naglowek.className = 'podpis podpis-grupy';
+    naglowek.textContent = `${grupa.nazwa} (${grupa.cwiczenia.length})`;
+    miejsce.appendChild(naglowek);
 
-    if (edytowaneCwiczenie === cwiczenie.id) {
-      // --- tryb edycji nazwy ---
-      pozycja.className = 'wpis-edycja';
-      pozycja.innerHTML = `
-        <input type="text" class="pole-edycji" value="" autocomplete="off">
-        <div class="rzad">
-          <button class="przycisk maly" data-akcja="zapisz-nazwe">Zapisz</button>
-          <button class="przycisk maly wtorny" data-akcja="anuluj-nazwe">Anuluj</button>
-        </div>`;
-      const pole = pozycja.querySelector('.pole-edycji');
-      pole.value = cwiczenie.nazwa;
-
-      pozycja.querySelector('[data-akcja="zapisz-nazwe"]')
-        .addEventListener('click', () => zapiszNazwe(cwiczenie.id, pole.value));
-      pozycja.querySelector('[data-akcja="anuluj-nazwe"]')
-        .addEventListener('click', () => { edytowaneCwiczenie = null; rysujCwiczenia(); });
-
-      // Enter na klawiaturze też zapisuje
-      pole.addEventListener('keydown', zdarzenie => {
-        if (zdarzenie.key === 'Enter') zapiszNazwe(cwiczenie.id, pole.value);
-      });
-
-    } else {
-      // --- zwykły wiersz ---
-      pozycja.className = 'wpis-cwiczenia';
-      pozycja.innerHTML = `
-        <span class="nazwa"></span>
-        <button class="ikonka" data-akcja="edytuj" title="Zmień nazwę">✏️</button>
-        <button class="ikonka" data-akcja="usun" title="Usuń">🗑️</button>`;
-      pozycja.querySelector('.nazwa').textContent = cwiczenie.nazwa;
-
-      pozycja.querySelector('[data-akcja="edytuj"]').addEventListener('click', () => {
-        edytowaneCwiczenie = cwiczenie.id;
-        rysujCwiczenia();
-        const pole = el('lista-cwiczen').querySelector('.pole-edycji');
-        if (pole) { pole.focus(); pole.select(); }
-      });
-
-      pozycja.querySelector('[data-akcja="usun"]').addEventListener('click', () => {
-        usunCwiczenie(cwiczenie.id);
-      });
-    }
-
-    lista.appendChild(pozycja);
+    const lista = document.createElement('ul');
+    lista.className = 'lista';
+    grupa.cwiczenia.forEach(cwiczenie => lista.appendChild(wpisCwiczenia(cwiczenie)));
+    miejsce.appendChild(lista);
   });
+}
+
+function wpisCwiczenia(cwiczenie) {
+  const pozycja = document.createElement('li');
+
+  if (edytowaneCwiczenie === cwiczenie.id) {
+    // --- tryb poprawiania: nazwa i kategoria ---
+    pozycja.className = 'wpis-edycja';
+    pozycja.innerHTML = `
+      <input type="text" class="pole-edycji" autocomplete="off">
+      <label class="pole">
+        <span>Kategoria</span>
+        <select class="pole-kategorii"></select>
+      </label>
+      <div class="rzad">
+        <button class="przycisk maly" data-akcja="zapisz-nazwe">Zapisz</button>
+        <button class="przycisk maly wtorny" data-akcja="anuluj-nazwe">Anuluj</button>
+      </div>`;
+
+    const pole = pozycja.querySelector('.pole-edycji');
+    const wyborKategorii = pozycja.querySelector('.pole-kategorii');
+    pole.value = cwiczenie.nazwa;
+    wypelnijListeKategorii(wyborKategorii, cwiczenie.kategoriaId);
+
+    const zapisz = () => zapiszCwiczenie(cwiczenie.id, pole.value, wyborKategorii.value);
+    pozycja.querySelector('[data-akcja="zapisz-nazwe"]').addEventListener('click', zapisz);
+    pole.addEventListener('keydown', z => { if (z.key === 'Enter') zapisz(); });
+
+    pozycja.querySelector('[data-akcja="anuluj-nazwe"]').addEventListener('click', () => {
+      edytowaneCwiczenie = null;
+      rysujCwiczenia();
+    });
+
+  } else {
+    // --- zwykły wiersz ---
+    pozycja.className = 'wpis-cwiczenia';
+    pozycja.innerHTML = `
+      <span class="nazwa"></span>
+      <button class="ikonka mala" data-akcja="edytuj" title="Popraw ćwiczenie">✏️</button>
+      <button class="ikonka mala" data-akcja="usun" title="Usuń">🗑️</button>`;
+    pozycja.querySelector('.nazwa').textContent = cwiczenie.nazwa;
+
+    pozycja.querySelector('[data-akcja="edytuj"]').addEventListener('click', () => {
+      edytowaneCwiczenie = cwiczenie.id;
+      rysujCwiczenia();
+      const pole = el('lista-cwiczen').querySelector('.pole-edycji');
+      if (pole) { pole.focus(); pole.select(); }
+    });
+
+    pozycja.querySelector('[data-akcja="usun"]')
+      .addEventListener('click', () => usunCwiczenie(cwiczenie.id));
+  }
+
+  return pozycja;
 }
 
 /* --------------------------------------------------------------------------
@@ -89,7 +127,11 @@ function dodajCwiczenie() {
     return;
   }
 
-  dane.cwiczenia.push({ id: nowyId(), nazwa: nazwa });
+  dane.cwiczenia.push({
+    id: nowyId(),
+    nazwa: nazwa,
+    kategoriaId: el('nowa-cwiczenie-kategoria').value || null
+  });
   zapiszDane();
 
   pole.value = '';
@@ -98,9 +140,9 @@ function dodajCwiczenie() {
 }
 
 /* --------------------------------------------------------------------------
-   Zmiana nazwy
+   Zmiana nazwy i kategorii
    -------------------------------------------------------------------------- */
-function zapiszNazwe(id, nowaNazwa) {
+function zapiszCwiczenie(id, nowaNazwa, nowaKategoria) {
   const nazwa = nowaNazwa.trim();
   if (!nazwa) {
     powiadom('Nazwa nie może być pusta.');
@@ -117,6 +159,8 @@ function zapiszNazwe(id, nowaNazwa) {
   const cwiczenie = znajdzCwiczenie(id);
   if (cwiczenie) {
     cwiczenie.nazwa = nazwa;
+    cwiczenie.kategoriaId = nowaKategoria || null;
+
     // trening w toku ma skopiowaną nazwę — poprawiamy też tam
     if (dane.aktywnyTrening) {
       dane.aktywnyTrening.cwiczenia

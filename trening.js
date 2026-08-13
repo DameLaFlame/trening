@@ -155,9 +155,16 @@ function zakonczTrening() {
   }
 
   if (gotowe.odpadlo > 0) {
+    // wprost wymieniamy ćwiczenia, które w całości wypadną — to najczęstszy
+    // przypadek: coś było w zestawie, ale dziś nie zostało zrobione
+    const opisPominietych = gotowe.pominiete.length > 0
+      ? `\n\nW ogóle nie zapiszę: ${gotowe.pominiete.join(', ')}.`
+      : '';
+
     zapytaj(
-      `${gotowe.odpadlo} ${odmien(gotowe.odpadlo, 'seria jest niewypełniona', 'serie są niewypełnione', 'serii jest niewypełnionych')} ` +
-      '— brakuje ciężaru albo powtórzeń. Zapisać trening bez nich?',
+      `${gotowe.odpadlo} ${odmien(gotowe.odpadlo, 'seria jest pusta', 'serie są puste', 'serii jest pustych')} ` +
+      '— nie wpisałeś ciężaru albo powtórzeń.' + opisPominietych +
+      '\n\nZapisać trening bez nich?',
       'Zapisz trening',
       () => zapiszZakonczony(gotowe.cwiczenia),
       false

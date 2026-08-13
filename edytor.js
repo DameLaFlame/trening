@@ -54,23 +54,38 @@ function ileGotowychSerii(trening) {
 }
 
 /* Ćwiczenia z samymi wypełnionymi seriami — reszta odpada.
-   Zwraca też, ile serii odpadło, żeby dało się o tym uprzedzić. */
+   Do historii trafiają czyste serie, bez szarych podpowiedzi.
+   Zwraca też, co odpadło, żeby dało się o tym uprzedzić. */
 function tylkoWypelnione(trening) {
-  let odpadlo = 0;
+  let odpadloSerii = 0;
+  const pominieteCwiczenia = [];
+
   const cwiczenia = trening.cwiczenia
-    .map(wpis => ({
-      id: wpis.id,
-      cwiczenieId: wpis.cwiczenieId,
-      nazwa: wpis.nazwa,
-      serie: wpis.serie.filter(seria => {
-        if (seriaKompletna(seria)) return true;
-        odpadlo++;
-        return false;
-      })
-    }))
+    .map(wpis => {
+      const serie = wpis.serie
+        .filter(seria => {
+          if (seriaKompletna(seria)) return true;
+          odpadloSerii++;
+          return false;
+        })
+        .map(seria => ({ kg: seria.kg, powt: seria.powt }));
+
+      if (serie.length === 0) pominieteCwiczenia.push(wpis.nazwa);
+
+      return {
+        id: wpis.id,
+        cwiczenieId: wpis.cwiczenieId,
+        nazwa: wpis.nazwa,
+        serie: serie
+      };
+    })
     .filter(wpis => wpis.serie.length > 0);
 
-  return { cwiczenia: cwiczenia, odpadlo: odpadlo };
+  return {
+    cwiczenia: cwiczenia,
+    odpadlo: odpadloSerii,
+    pominiete: pominieteCwiczenia
+  };
 }
 
 /* Liczba z pola tekstowego — przecinek zamieniamy na kropkę.
@@ -94,7 +109,10 @@ function kartaCwiczenia(wpis, edytor) {
     </div>
     <p class="podpowiedz"></p>
     <ol class="serie"></ol>
-    <button class="przycisk" data-akcja="dodaj-serie">+ Dodaj serię</button>`;
+    <div class="rzad">
+      <button class="przycisk" data-akcja="dodaj-serie">+ Dodaj serię</button>
+      <button class="przycisk wtorny" data-akcja="jak-ostatnio">✓ Jak ostatnio</button>
+    </div>`;
 
   karta.querySelector('h3').textContent = wpis.nazwa;
 
@@ -116,7 +134,31 @@ function kartaCwiczenia(wpis, edytor) {
   karta.querySelector('[data-akcja="usun-cwiczenie"]')
     .addEventListener('click', () => usunCwiczenieZTreningu(edytor, wpis.id));
 
+  // „Jak ostatnio” ma sens tylko wtedy, gdy jest co przepisać
+  const doPrzepisania = wpis.serie.some(s => s.wzorzec && !seriaKompletna(s));
+  const btnJakOstatnio = karta.querySelector('[data-akcja="jak-ostatnio"]');
+  if (doPrzepisania) {
+    btnJakOstatnio.addEventListener('click', () => wpiszJakOstatnio(edytor, wpis.id));
+  } else {
+    btnJakOstatnio.remove();
+  }
+
   return karta;
+}
+
+/* Przepisuje szare podpowiedzi do pustych serii — jednym kliknięciem,
+   gdy trening przebiegł tak samo jak poprzednio. */
+function wpiszJakOstatnio(edytor, wpisId) {
+  const wpis = edytor.trening.cwiczenia.find(w => w.id === wpisId);
+  if (!wpis) return;
+
+  wpis.serie.forEach(seria => {
+    if (!seria.wzorzec) return;
+    if (seria.kg === null || seria.kg === undefined) seria.kg = seria.wzorzec.kg;
+    if (seria.powt === null || seria.powt === undefined) seria.powt = seria.wzorzec.powt;
+  });
+
+  edytor.poZmianie(true);
 }
 
 /* Jeden wiersz serii: [ 80 ] kg × [ 8 ]  ✕  — pola można poprawiać wprost. */
@@ -138,6 +180,13 @@ function wierszSerii(wpis, seria, numer, edytor) {
   const polePowt = wiersz.querySelector('.pole-powt');
   poleKg.value   = seria.kg   === null || seria.kg   === undefined ? '' : formatujKg(seria.kg);
   polePowt.value = seria.powt === null || seria.powt === undefined ? '' : seria.powt;
+
+  // szara podpowiedź: tak wyglądała ta seria ostatnim razem
+  if (seria.wzorzec) {
+    poleKg.placeholder   = formatujKg(seria.wzorzec.kg);
+    polePowt.placeholder = seria.wzorzec.powt;
+    wiersz.classList.add('z-podpowiedzia');
+  }
 
   poleKg.addEventListener('input',   () => zmienSerie(edytor, wpis.id, numer, 'kg',   poleKg));
   polePowt.addEventListener('input', () => zmienSerie(edytor, wpis.id, numer, 'powt', polePowt));
@@ -177,16 +226,21 @@ function zmienSerie(edytor, wpisId, numer, ktore, pole) {
   edytor.poZmianie(false);
 }
 
-/* Nowa seria = kopia poprzedniej (albo pusta, gdy to pierwsza). */
+/* Nowa seria: pusta, z szarą podpowiedzią z poprzedniej serii. */
 function dodajSerie(edytor, wpisId) {
   const wpis = edytor.trening.cwiczenia.find(w => w.id === wpisId);
   if (!wpis) return;
 
   const poprzednia = wpis.serie[wpis.serie.length - 1];
-  wpis.serie.push(poprzednia
-    ? { kg: poprzednia.kg, powt: poprzednia.powt }
-    : { kg: null, powt: null });
+  const nowa = { kg: null, powt: null };
 
+  if (poprzednia) {
+    // podpowiadamy tym, co wpisane, a jak nic nie wpisano — jej podpowiedzią
+    const zrodlo = seriaKompletna(poprzednia) ? poprzednia : poprzednia.wzorzec;
+    if (zrodlo) nowa.wzorzec = { kg: zrodlo.kg, powt: zrodlo.powt };
+  }
+
+  wpis.serie.push(nowa);
   edytor.poZmianie(true);
 }
 
@@ -262,16 +316,25 @@ function otworzWyborCwiczenia(edytor) {
 }
 
 /* Świeży wpis ćwiczenia do treningu.
-   kopiujSerie = true -> przepisujemy serie z ostatniego razu, zostaje tylko
-   poprawić liczby. Przy poprawianiu historii zaczynamy od pustej serii,
-   bo tam wpisuje się to, co faktycznie było. */
+
+   kopiujSerie = true -> odtwarzamy UKŁAD ostatniego treningu: tyle samo serii,
+   a w każdej szara podpowiedź z poprzednimi liczbami. Pola zostają PUSTE.
+   Dzięki temu ćwiczenie, którego dziś nie zrobiłeś, nie zapisze się samo —
+   pusta seria nie trafia do historii.
+
+   Przy poprawianiu historii zaczynamy od jednej pustej serii, bez podpowiedzi:
+   tam wpisuje się to, co faktycznie było. */
 function nowyWpisCwiczenia(cwiczenieId, kopiujSerie) {
   const cwiczenie = znajdzCwiczenie(cwiczenieId);
   if (!cwiczenie) return null;
 
   const ostatnie = kopiujSerie ? ostatnieSerie(cwiczenieId) : null;
   const serie = ostatnie
-    ? ostatnie.serie.map(seria => ({ kg: seria.kg, powt: seria.powt }))
+    ? ostatnie.serie.map(seria => ({
+        kg: null,
+        powt: null,
+        wzorzec: { kg: seria.kg, powt: seria.powt }   // tylko podpowiedź
+      }))
     : [{ kg: null, powt: null }];
 
   return {

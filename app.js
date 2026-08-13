@@ -48,7 +48,7 @@ function pokazEkran(nazwa) {
 /* Każdy ekran rysuje się na nowo w momencie wejścia. */
 function odswiezEkran(nazwa) {
   if (nazwa === 'trening')    rysujTrening();
-  if (nazwa === 'cwiczenia')  rysujCwiczenia();
+  if (nazwa === 'cwiczenia')  pokazKategorie(false);   // zawsze od listy ćwiczeń
   if (nazwa === 'waga')       rysujWage();
   if (nazwa === 'historia')   wejscieNaHistorie();
   if (nazwa === 'progres')    wejscieNaProgres();
@@ -125,6 +125,7 @@ function start() {
   podepnijEdytor();
   podepnijTrening();
   podepnijCwiczenia();
+  podepnijKategorie();
   podepnijZestawy();
   podepnijHistorie();
   podepnijWage();

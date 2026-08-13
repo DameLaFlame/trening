@@ -9,19 +9,32 @@
 /* Pod tym kluczem siedzą dane w pamięci przeglądarki. */
 const KLUCZ_DANYCH = 'silownia-dane-v1';
 
-/* Ćwiczenia wpisywane automatycznie przy pierwszym uruchomieniu. */
-const DOMYSLNE_CWICZENIA = [
-  'Przysiad ze sztangą',
-  'Martwy ciąg',
-  'Wyciskanie leżąc',
-  'Wyciskanie żołnierskie',
-  'Wiosłowanie sztangą',
-  'Podciąganie',
-  'Wyciskanie hantlami skos',
-  'Uginanie ramion ze sztangą',
-  'Prostowanie ramion na wyciągu',
-  'Wyciskanie nogami'
+/* Kategorie wpisywane automatycznie przy pierwszym uruchomieniu. */
+const DOMYSLNE_KATEGORIE = [
+  'Klatka',
+  'Plecy',
+  'Barki',
+  'Biceps',
+  'Triceps',
+  'Nogi',
+  'Brzuch',
+  'Cardio'
 ];
+
+/* Ćwiczenia wpisywane automatycznie przy pierwszym uruchomieniu,
+   razem z kategorią, do której należą. */
+const DOMYSLNE_CWICZENIA = {
+  'Przysiad ze sztangą':           'Nogi',
+  'Martwy ciąg':                   'Plecy',
+  'Wyciskanie leżąc':              'Klatka',
+  'Wyciskanie żołnierskie':        'Barki',
+  'Wiosłowanie sztangą':           'Plecy',
+  'Podciąganie':                   'Plecy',
+  'Wyciskanie hantlami skos':      'Klatka',
+  'Uginanie ramion ze sztangą':    'Biceps',
+  'Prostowanie ramion na wyciągu': 'Triceps',
+  'Wyciskanie nogami':             'Nogi'
+};
 
 /* Krótki, niepowtarzalny identyfikator (np. dla ćwiczenia albo treningu). */
 function nowyId() {
@@ -99,9 +112,21 @@ function odmien(liczba, jeden, dwa, piec) {
 
 /* Tak wygląda komplet danych przy pierwszym uruchomieniu. */
 function pustaBaza() {
+  const kategorie = DOMYSLNE_KATEGORIE.map(nazwa => ({ id: nowyId(), nazwa: nazwa }));
+
+  const idKategorii = nazwaKategorii => {
+    const znaleziona = kategorie.find(k => k.nazwa === nazwaKategorii);
+    return znaleziona ? znaleziona.id : null;
+  };
+
   return {
     wersja: 1,
-    cwiczenia: DOMYSLNE_CWICZENIA.map(nazwa => ({ id: nowyId(), nazwa: nazwa })),
+    kategorie: kategorie,
+    cwiczenia: Object.keys(DOMYSLNE_CWICZENIA).map(nazwa => ({
+      id: nowyId(),
+      nazwa: nazwa,
+      kategoriaId: idKategorii(DOMYSLNE_CWICZENIA[nazwa])
+    })),
     zestawy: [],           // gotowe zestawy ćwiczeń do powtarzania
     treningi: [],          // zakończone treningi
     aktywnyTrening: null,  // trening rozpoczęty, jeszcze nie zakończony
@@ -125,13 +150,34 @@ function wczytajDane() {
     const baza = pustaBaza();
 
     // Doklejamy brakujące pola — dzięki temu starsze dane nie wysypią aplikacji.
-    return Object.assign(baza, wczytane, {
+    const polaczone = Object.assign(baza, wczytane, {
       ustawienia: Object.assign(baza.ustawienia, wczytane.ustawienia || {})
     });
+
+    uzupelnijKategorie(polaczone);
+    return polaczone;
   } catch (blad) {
     console.warn('Nie udało się wczytać danych, zaczynam od pustej bazy.', blad);
     return pustaBaza();
   }
+}
+
+/* Dane zapisane zanim istniały kategorie nie mają ich przy ćwiczeniach.
+   Podstawową dziesiątkę rozpoznajemy po nazwie, reszta ląduje bez kategorii —
+   można ją przypisać ręcznie w zakładce „Ćwicz.”. */
+function uzupelnijKategorie(baza) {
+  if (!Array.isArray(baza.kategorie)) baza.kategorie = [];
+
+  baza.cwiczenia.forEach(cwiczenie => {
+    if (cwiczenie.kategoriaId) return;             // już przypisane
+
+    const nazwaKategorii = DOMYSLNE_CWICZENIA[cwiczenie.nazwa];
+    const kategoria = nazwaKategorii
+      ? baza.kategorie.find(k => k.nazwa === nazwaKategorii)
+      : null;
+
+    cwiczenie.kategoriaId = kategoria ? kategoria.id : null;
+  });
 }
 
 /* Zapis danych do pamięci. Wołane po KAŻDEJ zmianie. */
