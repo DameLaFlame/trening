@@ -1,23 +1,74 @@
 /* ==========================================================================
-   progres.js — ekran „Progres”: jak zmieniał się ciężar w danym ćwiczeniu
+   progres.js — ekran „Progres”: partie mięśniowe → ćwiczenia → wykres
    --------------------------------------------------------------------------
-   Ekran ma dwa widoki: listę ćwiczeń z rekordami i szczegóły jednego z nich.
+   Trzy poziomy:
+     1. partie mięśniowe (kategorie) ze strzałką postępu
+     2. ćwiczenia w wybranej partii, każde ze strzałką
+     3. jedno ćwiczenie: rekord, wykres i trening po treningu
 
-   Przy ćwiczeniach z masą własną (podciąganie, pompki — ciężar 0 kg) liczenie
-   rekordu w kilogramach nie ma sensu, więc aplikacja sama przechodzi
-   na liczenie powtórzeń.
+   JAK MIERZYMY SIŁĘ
+   Dla każdego treningu bierzemy najlepszą serię i liczymy z niej „szacowany
+   ciężar maksymalny” — ile dałbyś radę podnieść na 1 powtórzenie. Wzór Epleya:
+        e1RM = waga × (1 + powtórzenia / 30)
+   Dzięki temu i większy ciężar, i więcej powtórzeń przy tym samym ciężarze
+   podnoszą wynik — czyli dokładnie to, co znaczy „zrobiłem się silniejszy”.
+
+   Strzałka to zmiana PROCENTOWA (nie w kg). Procent jest porównywalny między
+   ćwiczeniami: +5% znaczy to samo przy wyciskaniu 100 kg i przy uginaniu 20 kg.
+   Dlatego da się z nich policzyć jedną strzałkę dla całej partii.
+
+   Ćwiczenia z masą własną (ciężar 0) mierzymy liczbą powtórzeń — tam postępem
+   jest zrobienie większej liczby powtórzeń.
    ========================================================================== */
 
-let wybranyProgres = null;   // id ćwiczenia albo null = lista
+const BRAK_KATEGORII = '__brak__';   // koszyk na ćwiczenia bez kategorii
+
+let progresKategoria = undefined;    // undefined = lista partii
+let wybranyProgres = null;           // id ćwiczenia, null = lista ćwiczeń partii
 
 /* --------------------------------------------------------------------------
-   Zbieranie danych o ćwiczeniu z całej historii
+   Metryka siły
    -------------------------------------------------------------------------- */
 
-/* Wszystko, co wiemy o jednym ćwiczeniu:
-   { nazwa, trybPowtorzen, punkty[], rekord, ileTreningow } */
+/* Szacowany ciężar na 1 powtórzenie (wzór Epleya). */
+function e1rm(kg, powt) {
+  return kg * (1 + powt / 30);
+}
+
+/* Wynik ćwiczenia w jednym treningu:
+   - z ciężarem: najlepszy e1RM ze wszystkich serii,
+   - masa własna: najwięcej powtórzeń. */
+function wynikSesji(serie, masaWlasna) {
+  return masaWlasna
+    ? Math.max(...serie.map(s => s.powt))
+    : Math.max(...serie.map(s => e1rm(s.kg, s.powt)));
+}
+
+/* Zmiana procentowa z „od” na „do” (null, gdy nie ma od czego liczyć). */
+function procentZmiany(od, doWartosci) {
+  if (!od) return null;
+  return (doWartosci - od) / od * 100;
+}
+
+/* Strzałka: tekst + kolor. Poniżej 1% traktujemy jako „bez zmian”, żeby
+   drobne wahania nie migały na zielono i czerwono. */
+function znacznikProcent(procent) {
+  if (procent === null || procent === undefined) {
+    return { tekst: 'za mało danych', klasa: 'bez-zmian' };
+  }
+  const p = Math.round(procent * 10) / 10;
+  if (Math.abs(p) < 1) return { tekst: '≈ bez zmian', klasa: 'bez-zmian' };
+
+  return p > 0
+    ? { tekst: '↑ +' + formatujKg(p) + '%', klasa: 'w-gore' }
+    : { tekst: '↓ −' + formatujKg(Math.abs(p)) + '%', klasa: 'w-dol' };
+}
+
+/* --------------------------------------------------------------------------
+   Zbieranie danych o jednym ćwiczeniu z całej historii
+   -------------------------------------------------------------------------- */
 function daneCwiczenia(cwiczenieId) {
-  const dni = new Map();     // data -> lista serii z tego dnia
+  const dni = new Map();     // data -> serie z tego dnia
   let nazwa = '';
 
   treningiOdNajnowszych().forEach(trening => {
@@ -30,150 +81,231 @@ function daneCwiczenia(cwiczenieId) {
       });
   });
 
-  // ćwiczenie mogło zostać przemianowane — bierzemy aktualną nazwę z listy
   const zListy = znajdzCwiczenie(cwiczenieId);
   if (zListy) nazwa = zListy.nazwa;
 
-  const wszystkieSerie = [...dni.values()].flat();
-  const najciezsza = Math.max(...wszystkieSerie.map(s => s.kg));
-
-  // same ćwiczenia z masą własną -> liczymy powtórzenia zamiast kilogramów
-  const trybPowtorzen = najciezsza === 0;
-  const wartoscSerii = seria => trybPowtorzen ? seria.powt : seria.kg;
+  const wszystkie = [...dni.values()].flat();
+  const masaWlasna = wszystkie.length > 0 && Math.max(...wszystkie.map(s => s.kg)) === 0;
 
   const punkty = [...dni.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([data, serie]) => ({
       data: data,
       krotka: formatujDateKrotko(data),
-      wartosc: Math.max(...serie.map(wartoscSerii)),
+      wartosc: Math.round(wynikSesji(serie, masaWlasna) * 10) / 10,
       serie: serie
     }));
 
+  const n = punkty.length;
   return {
     nazwa: nazwa,
-    trybPowtorzen: trybPowtorzen,
+    masaWlasna: masaWlasna,
     punkty: punkty,
-    rekord: znajdzRekord(punkty, trybPowtorzen),
-    ileTreningow: punkty.length
+    rekord: znajdzRekord(punkty, masaWlasna),
+    ileTreningow: n,
+    zmianaOstatnia:   n >= 2 ? procentZmiany(punkty[n - 2].wartosc, punkty[n - 1].wartosc) : null,
+    zmianaOdPoczatku: n >= 2 ? procentZmiany(punkty[0].wartosc,     punkty[n - 1].wartosc) : null
   };
 }
 
-/* Najlepsza seria w historii ćwiczenia. Przy równym ciężarze wygrywa ta
-   z większą liczbą powtórzeń, a przy pełnym remisie — ta zrobiona pierwsza. */
-function znajdzRekord(punkty, trybPowtorzen) {
+/* Najlepsza pojedyncza seria w historii — po e1RM (albo po powtórzeniach). */
+function znajdzRekord(punkty, masaWlasna) {
   let rekord = null;
+  const ocena = s => masaWlasna ? s.powt : e1rm(s.kg, s.powt);
 
   punkty.forEach(punkt => {
     punkt.serie.forEach(seria => {
-      if (!rekord) { rekord = { seria: seria, data: punkt.data }; return; }
-
-      const lepsza = trybPowtorzen
-        ? seria.powt > rekord.seria.powt
-        : seria.kg > rekord.seria.kg ||
-          (seria.kg === rekord.seria.kg && seria.powt > rekord.seria.powt);
-
-      if (lepsza) rekord = { seria: seria, data: punkt.data };
+      if (!rekord || ocena(seria) > ocena(rekord.seria)) {
+        rekord = { seria: seria, data: punkt.data };
+      }
     });
   });
 
   return rekord;
 }
 
-/* Ćwiczenia, które w ogóle pojawiły się w historii — od ostatnio robionych. */
-function cwiczeniaZHistorii() {
-  const widziane = new Map();   // cwiczenieId -> data ostatniego treningu
-
-  treningiOdNajnowszych().forEach(trening => {
-    trening.cwiczenia.forEach(wpis => {
-      if (wpis.serie.length === 0) return;
-      if (!widziane.has(wpis.cwiczenieId)) widziane.set(wpis.cwiczenieId, trening.data);
-    });
-  });
-
-  return [...widziane.entries()]
-    .sort((a, b) => b[1].localeCompare(a[1]))
-    .map(([id, data]) => ({ id: id, ostatnio: data }));
-}
-
-/* Rekord jako gotowy tekst, np. „100 kg × 5” albo „18 powtórzeń”. */
-function opisRekordu(rekord, trybPowtorzen) {
+/* Rekord jako tekst, np. „100 kg × 5” albo „18 powtórzeń”. */
+function opisRekordu(rekord, masaWlasna) {
   if (!rekord) return '—';
-  return trybPowtorzen
+  return masaWlasna
     ? `${rekord.seria.powt} ${odmien(rekord.seria.powt, 'powtórzenie', 'powtórzenia', 'powtórzeń')}`
     : opisSerii(rekord.seria);
 }
 
 /* --------------------------------------------------------------------------
-   Rysowanie
+   Grupowanie po partiach
    -------------------------------------------------------------------------- */
-function rysujProgres() {
-  const otwarty = wybranyProgres !== null;
 
-  el('progres-lista').hidden = otwarty;
-  el('progres-szczegoly').hidden = !otwarty;
+/* Partie zawierające ćwiczenia, które w ogóle były trenowane. */
+function kategorieProgresu() {
+  const trenowane = new Set();
+  dane.treningi.forEach(trening => {
+    trening.cwiczenia.forEach(wpis => {
+      if (wpis.serie.length > 0) trenowane.add(wpis.cwiczenieId);
+    });
+  });
 
-  if (otwarty) rysujSzczegolyProgresu();
-  else         rysujListeProgresu();
+  const grupy = dane.kategorie.map(kategoria => ({
+    id: kategoria.id,
+    nazwa: kategoria.nazwa,
+    cwiczenia: dane.cwiczenia.filter(c => c.kategoriaId === kategoria.id && trenowane.has(c.id))
+  }));
+
+  grupy.push({
+    id: BRAK_KATEGORII,
+    nazwa: 'Bez kategorii',
+    cwiczenia: dane.cwiczenia.filter(c => !znajdzKategorie(c.kategoriaId) && trenowane.has(c.id))
+  });
+
+  return grupy.filter(grupa => grupa.cwiczenia.length > 0);
 }
 
-/* Wejście na zakładkę zawsze zaczyna od listy ćwiczeń. */
+/* Postęp partii = średnia z procentowych zmian jej ćwiczeń. */
+function progresKategorii(cwiczenia) {
+  const zmiany = [];
+  cwiczenia.forEach(c => {
+    const zmiana = daneCwiczenia(c.id).zmianaOstatnia;
+    if (zmiana !== null) zmiany.push(zmiana);
+  });
+  if (zmiany.length === 0) return null;
+  return zmiany.reduce((suma, z) => suma + z, 0) / zmiany.length;
+}
+
+function nazwaBiezacejKategorii() {
+  if (progresKategoria === BRAK_KATEGORII) return 'Bez kategorii';
+  const kategoria = znajdzKategorie(progresKategoria);
+  return kategoria ? kategoria.nazwa : 'Partie';
+}
+
+/* --------------------------------------------------------------------------
+   Rysowanie — wybór jednego z trzech poziomów
+   -------------------------------------------------------------------------- */
+function rysujProgres() {
+  const miejsce = el('progres-tresc');
+  miejsce.innerHTML = '';
+
+  if (wybranyProgres)                    rysujSzczegolyProgresu(miejsce);
+  else if (progresKategoria !== undefined) rysujCwiczeniaKategorii(miejsce);
+  else                                    rysujKategorieProgresu(miejsce);
+}
+
+/* Wejście na zakładkę zawsze zaczyna od listy partii. */
 function wejscieNaProgres() {
+  progresKategoria = undefined;
   wybranyProgres = null;
   rysujProgres();
 }
 
-/* --- widok A: lista ćwiczeń z rekordami --- */
-function rysujListeProgresu() {
-  el('progres-tresc').innerHTML = '';   // ekran sprząta po sobie
+/* Wspólny wiersz „nazwa + strzałka + podtytuł”. */
+function wierszProgresu(nazwa, znacznik, podtytul, onClick) {
+  const pozycja = document.createElement('li');
+  pozycja.className = 'wpis-treningu';
+  pozycja.innerHTML = `
+    <button class="wybor-treningu">
+      <span class="glowa-progresu">
+        <span class="nazwa-progres-wiersz"></span>
+        <span class="znacznik-progres"></span>
+      </span>
+      <span class="cwiczenia-skrot"></span>
+    </button>`;
 
-  const lista = el('lista-progresu');
-  const cwiczenia = cwiczeniaZHistorii();
-  lista.innerHTML = '';
+  pozycja.querySelector('.nazwa-progres-wiersz').textContent = nazwa;
+  const zn = pozycja.querySelector('.znacznik-progres');
+  zn.textContent = znacznik.tekst;
+  zn.classList.add(znacznik.klasa);
+  pozycja.querySelector('.cwiczenia-skrot').textContent = podtytul;
+  pozycja.querySelector('.wybor-treningu').addEventListener('click', onClick);
 
-  if (cwiczenia.length === 0) {
-    lista.innerHTML = '<li class="pusty-wpis">Zapisz pierwszy trening, ' +
-                      'a tutaj pojawią się Twoje rekordy.</li>';
+  return pozycja;
+}
+
+function przyciskPowrotu(tekst, onClick) {
+  const przycisk = document.createElement('button');
+  przycisk.className = 'przycisk wtorny przycisk-powrotu';
+  przycisk.textContent = tekst;
+  przycisk.addEventListener('click', onClick);
+  return przycisk;
+}
+
+/* --- poziom 1: partie mięśniowe --- */
+function rysujKategorieProgresu(miejsce) {
+  const podpis = document.createElement('p');
+  podpis.className = 'podpis';
+  podpis.textContent = 'Postęp według partii';
+  miejsce.appendChild(podpis);
+
+  const grupy = kategorieProgresu();
+
+  if (grupy.length === 0) {
+    const pusto = document.createElement('div');
+    pusto.className = 'karta pusto';
+    pusto.innerHTML = '<p>Zapisz kilka treningów, a tutaj pojawi się Twój postęp.</p>';
+    miejsce.appendChild(pusto);
     return;
   }
 
-  cwiczenia.forEach(pozycjaHistorii => {
-    const info = daneCwiczenia(pozycjaHistorii.id);
+  const lista = document.createElement('ul');
+  lista.className = 'lista';
 
-    const pozycja = document.createElement('li');
-    pozycja.className = 'wpis-treningu';
-    pozycja.innerHTML = `
-      <button class="wybor-treningu">
-        <span class="glowa-wpisu">
-          <span class="data-treningu"></span>
-          <span class="strzalka">›</span>
-        </span>
-        <span class="podsumowanie"></span>
-        <span class="cwiczenia-skrot"></span>
-      </button>`;
+  grupy.forEach(grupa => {
+    const znacznik = znacznikProcent(progresKategorii(grupa.cwiczenia));
+    const podtytul = `${grupa.cwiczenia.length} ` +
+      odmien(grupa.cwiczenia.length, 'ćwiczenie', 'ćwiczenia', 'ćwiczeń');
 
-    pozycja.querySelector('.data-treningu').textContent = info.nazwa;
-    pozycja.querySelector('.podsumowanie').textContent =
-      'Rekord: ' + opisRekordu(info.rekord, info.trybPowtorzen);
-    pozycja.querySelector('.cwiczenia-skrot').textContent =
-      `${info.ileTreningow} ${odmien(info.ileTreningow, 'trening', 'treningi', 'treningów')} · ` +
-      `ostatnio ${formatujDate(pozycjaHistorii.ostatnio)}`;
-
-    pozycja.querySelector('.wybor-treningu').addEventListener('click', () => {
-      wybranyProgres = pozycjaHistorii.id;
+    lista.appendChild(wierszProgresu(grupa.nazwa, znacznik, podtytul, () => {
+      progresKategoria = grupa.id;
       rysujProgres();
       el('tresc').scrollTop = 0;
-    });
-
-    lista.appendChild(pozycja);
+    }));
   });
+
+  miejsce.appendChild(lista);
+
+  const nota = document.createElement('p');
+  nota.className = 'opis nota-progres';
+  nota.textContent = 'Strzałka: średnia zmiana siły ćwiczeń tej partii — ostatni ' +
+    'trening względem poprzedniego. Siłę liczymy jako szacowany ciężar ' +
+    'na jedno powtórzenie.';
+  miejsce.appendChild(nota);
 }
 
-/* --- widok B: szczegóły jednego ćwiczenia --- */
-function rysujSzczegolyProgresu() {
+/* --- poziom 2: ćwiczenia w wybranej partii --- */
+function rysujCwiczeniaKategorii(miejsce) {
+  const grupa = kategorieProgresu().find(g => g.id === progresKategoria);
+  if (!grupa) { progresKategoria = undefined; rysujProgres(); return; }
+
+  miejsce.appendChild(przyciskPowrotu('← Partie', () => {
+    progresKategoria = undefined;
+    rysujProgres();
+    el('tresc').scrollTop = 0;
+  }));
+
+  const naglowek = document.createElement('h2');
+  naglowek.className = 'nazwa-progresu';
+  naglowek.textContent = grupa.nazwa;
+  miejsce.appendChild(naglowek);
+
+  const lista = document.createElement('ul');
+  lista.className = 'lista';
+
+  grupa.cwiczenia.forEach(cwiczenie => {
+    const info = daneCwiczenia(cwiczenie.id);
+    const znacznik = znacznikProcent(info.zmianaOstatnia);
+    const podtytul = 'Rekord: ' + opisRekordu(info.rekord, info.masaWlasna);
+
+    lista.appendChild(wierszProgresu(cwiczenie.nazwa, znacznik, podtytul, () => {
+      wybranyProgres = cwiczenie.id;
+      rysujProgres();
+      el('tresc').scrollTop = 0;
+    }));
+  });
+
+  miejsce.appendChild(lista);
+}
+
+/* --- poziom 3: szczegóły jednego ćwiczenia --- */
+function rysujSzczegolyProgresu(miejsce) {
   const info = daneCwiczenia(wybranyProgres);
-  const miejsce = el('progres-tresc');
-  miejsce.innerHTML = '';
 
   if (info.punkty.length === 0) {   // ćwiczenie zniknęło z historii
     wybranyProgres = null;
@@ -181,7 +313,13 @@ function rysujSzczegolyProgresu() {
     return;
   }
 
-  // --- rekord życiowy ---
+  miejsce.appendChild(przyciskPowrotu('← ' + nazwaBiezacejKategorii(), () => {
+    wybranyProgres = null;
+    rysujProgres();
+    el('tresc').scrollTop = 0;
+  }));
+
+  // --- rekord i zmiany ---
   const karta = document.createElement('div');
   karta.className = 'karta';
   karta.innerHTML = `
@@ -189,33 +327,43 @@ function rysujSzczegolyProgresu() {
     <p class="podpis-karty">Rekord życiowy</p>
     <p class="waga-duza"></p>
     <div class="wiersz-info"><span>Ustanowiony</span><b class="kiedy-rekord"></b></div>
+    <div class="wiersz-info"><span>Od poprzedniego treningu</span><b class="zmiana-ostatnia"></b></div>
+    <div class="wiersz-info"><span>Od pierwszego treningu</span><b class="zmiana-poczatek"></b></div>
     <div class="wiersz-info"><span>Treningi z tym ćwiczeniem</span><b class="ile-treningow"></b></div>`;
 
   karta.querySelector('.nazwa-progresu').textContent = info.nazwa;
-  karta.querySelector('.waga-duza').textContent = opisRekordu(info.rekord, info.trybPowtorzen);
+  karta.querySelector('.waga-duza').textContent = opisRekordu(info.rekord, info.masaWlasna);
   karta.querySelector('.kiedy-rekord').textContent = formatujDate(info.rekord.data);
   karta.querySelector('.ile-treningow').textContent = info.ileTreningow;
+
+  const zo = znacznikProcent(info.zmianaOstatnia);
+  const bo = karta.querySelector('.zmiana-ostatnia');
+  bo.textContent = zo.tekst; bo.classList.add(zo.klasa);
+
+  const zp = znacznikProcent(info.zmianaOdPoczatku);
+  const bp = karta.querySelector('.zmiana-poczatek');
+  bp.textContent = zp.tekst; bp.classList.add(zp.klasa);
+
   miejsce.appendChild(karta);
 
   // --- wykres ---
-  const tytul = info.trybPowtorzen
-    ? 'Najwięcej powtórzeń w treningu'
-    : 'Najcięższa seria w treningu';
-
+  const tytul = info.masaWlasna ? 'Najwięcej powtórzeń w treningu' : 'Szacowany ciężar maksymalny';
   const kartaWykresu = document.createElement('div');
   kartaWykresu.className = info.punkty.length < 2 ? 'karta pusto' : 'karta';
 
   if (info.punkty.length < 2) {
-    kartaWykresu.innerHTML = '<p>Wykres pojawi się po drugim treningu ' +
-                             'z tym ćwiczeniem.</p>';
+    kartaWykresu.innerHTML = '<p>Wykres pojawi się po drugim treningu z tym ćwiczeniem.</p>';
   } else {
-    const formatuj = info.trybPowtorzen ? (v => String(Math.round(v))) : formatujKg;
+    const formatuj = info.masaWlasna ? (v => String(Math.round(v))) : formatujKg;
     kartaWykresu.innerHTML = `<p class="podpis-karty">${tytul}</p>` +
-                             rysunekWykresu(info.punkty, formatuj);
+      rysunekWykresu(info.punkty, formatuj) +
+      (info.masaWlasna ? '' :
+        '<p class="opis nota-progres">Szacowany ciężar na 1 powtórzenie: ' +
+        'waga × (1 + powtórzenia ÷ 30).</p>');
   }
   miejsce.appendChild(kartaWykresu);
 
-  // --- historia ćwiczenia ---
+  // --- trening po treningu ---
   const podpis = document.createElement('p');
   podpis.className = 'podpis';
   podpis.textContent = 'Trening po treningu';
@@ -225,7 +373,7 @@ function rysujSzczegolyProgresu() {
   lista.className = 'lista';
 
   [...info.punkty].reverse().forEach(punkt => {
-    const najlepsza = info.trybPowtorzen
+    const najlepsza = info.masaWlasna
       ? `${punkt.wartosc} ${odmien(punkt.wartosc, 'powtórzenie', 'powtórzenia', 'powtórzeń')}`
       : formatujKg(punkt.wartosc) + ' kg';
 
@@ -236,7 +384,8 @@ function rysujSzczegolyProgresu() {
         <b class="kg-pomiaru"></b>
         <span class="data-pomiaru"></span>
       </span>`;
-    pozycja.querySelector('.kg-pomiaru').textContent = najlepsza;
+    pozycja.querySelector('.kg-pomiaru').textContent =
+      najlepsza + (info.masaWlasna ? '' : ' (max)');
     pozycja.querySelector('.data-pomiaru').textContent =
       formatujDate(punkt.data) + ' · ' + opisListySerii(punkt.serie);
 
@@ -247,12 +396,9 @@ function rysujSzczegolyProgresu() {
 }
 
 /* --------------------------------------------------------------------------
-   Podpięcie przycisków (wołane raz, przy starcie aplikacji)
+   Podpięcie (wołane raz, przy starcie aplikacji)
    -------------------------------------------------------------------------- */
 function podepnijProgres() {
-  el('btn-wroc-progres').addEventListener('click', () => {
-    wybranyProgres = null;
-    rysujProgres();
-    el('tresc').scrollTop = 0;
-  });
+  /* Przyciski w Progresie budujemy w locie przy każdym rysowaniu, więc tutaj
+     nie ma nic do podpięcia. Funkcja zostaje, bo woła ją start aplikacji. */
 }

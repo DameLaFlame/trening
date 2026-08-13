@@ -39,6 +39,11 @@ html, body {
 body {
   display: flex;
   flex-direction: column;
+  /* 100dvh = „dynamiczna” wysokość ekranu: uwzględnia znikający pasek Safari
+     i wskaźnik domowy iPhone'a, więc dolny pasek zakładek nigdy nie zostaje
+     ucięty. 100vh niżej to zapas dla starszych przeglądarek. */
+  height: 100vh;
+  height: 100dvh;
   /* na Macu aplikacja trzyma szerokość telefonu i stoi na środku */
   max-width: 480px;
   margin: 0 auto;
@@ -62,9 +67,10 @@ body {
 /* ---------- obszar treści (przewijany) ---------- */
 #tresc {
   flex: 1 1 auto;
+  min-height: 0;              /* pozwala przewijać wnętrze zamiast rozpychać ekran */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 16px 16px calc(var(--wys-zakladek) + var(--bezpieczny-dol) + 24px);
+  padding: 16px 16px 24px;   /* pasek zakładek jest już poza tym obszarem */
 }
 
 .podpis {
@@ -714,7 +720,27 @@ body {
   font-size: 24px;
   font-weight: 700;
 }
-#btn-wroc-progres { margin-bottom: 16px; }
+.przycisk-powrotu { margin-bottom: 16px; }
+
+/* wiersz: nazwa po lewej, strzałka postępu po prawej */
+.glowa-progresu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nazwa-progres-wiersz {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.znacznik-progres {
+  flex: 0 0 auto;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.nota-progres { margin-top: 6px; line-height: 1.4; }
 
 .wpis-progresu { display: block !important; padding: 14px 16px; }
 .wpis-progresu .data-pomiaru { line-height: 1.35; }
@@ -739,16 +765,12 @@ body {
 .okno-male .przycisk { margin: 10px 0 0; }
 
 /* ---------- dolny pasek zakładek ---------- */
+/* Dolny pasek jest zwykłym elementem na końcu kolumny (nie „fixed”), dzięki
+   czemu zawsze siedzi nad wskaźnikiem domowym i nie chowa się za paskiem
+   Safari. Wysokość rośnie o bezpieczny margines iPhone'a. */
 .zakladki {
   flex: 0 0 auto;
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
   display: flex;
-  max-width: 480px;
-  margin: 0 auto;
   height: calc(var(--wys-zakladek) + var(--bezpieczny-dol));
   padding-bottom: var(--bezpieczny-dol);
   background: #12161c;
