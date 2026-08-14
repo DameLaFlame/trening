@@ -20,8 +20,23 @@
 
   <!-- ===================== GÓRNY PASEK ===================== -->
   <header class="naglowek">
+    <button class="hamburger" id="btn-menu" aria-label="Menu">☰</button>
     <h1 id="tytul-ekranu">Trening</h1>
   </header>
+
+  <!-- ===================== BOCZNE MENU (nakłada się na treść) ===================== -->
+  <div class="szuflada-nakladka" id="szuflada" hidden>
+    <nav class="szuflada-panel">
+      <p class="szuflada-tytul">Menu</p>
+      <button class="pozycja-menu" data-ekran="trening"><span class="ikona">🏋️</span> Trening</button>
+      <button class="pozycja-menu" data-ekran="rozciaganie"><span class="ikona">🧘</span> Rozciąganie</button>
+      <button class="pozycja-menu" data-ekran="waga"><span class="ikona">⚖️</span> Waga i jedzenie</button>
+      <button class="pozycja-menu" data-ekran="progres"><span class="ikona">📈</span> Progres</button>
+      <button class="pozycja-menu" data-ekran="historia"><span class="ikona">🕘</span> Historia</button>
+      <button class="pozycja-menu" data-ekran="cwiczenia"><span class="ikona">📋</span> Ćwiczenia</button>
+      <button class="pozycja-menu" data-ekran="ustawienia"><span class="ikona">⚙️</span> Ustawienia</button>
+    </nav>
+  </div>
 
   <!-- ===================== EKRANY ===================== -->
   <main id="tresc">
@@ -216,6 +231,12 @@
       <div id="progres-tresc"></div>
     </section>
 
+    <!-- ---------- 7. ROZCIĄGANIE ---------- -->
+    <!-- Trzy widoki (zestawy / edycja / pozycje) buduje w całości rozciaganie.js -->
+    <section class="ekran" id="ekran-rozciaganie" hidden>
+      <div id="rozc-tresc"></div>
+    </section>
+
     <!-- ---------- 6. USTAWIENIA ---------- -->
     <section class="ekran" id="ekran-ustawienia" hidden>
       <p class="podpis">Co siedzi teraz w pamięci telefonu</p>
@@ -311,27 +332,21 @@
     </div>
   </div>
 
-  <!-- ===================== DOLNY PASEK ZAKŁADEK ===================== -->
-  <nav class="zakladki" id="zakladki">
-    <button class="zakladka" data-ekran="trening">
-      <span class="ikona">🏋️</span><span class="etykieta">Trening</span>
-    </button>
-    <button class="zakladka" data-ekran="cwiczenia">
-      <span class="ikona">📋</span><span class="etykieta">Ćwicz.</span>
-    </button>
-    <button class="zakladka" data-ekran="waga">
-      <span class="ikona">⚖️</span><span class="etykieta">Waga</span>
-    </button>
-    <button class="zakladka" data-ekran="historia">
-      <span class="ikona">🕘</span><span class="etykieta">Historia</span>
-    </button>
-    <button class="zakladka" data-ekran="progres">
-      <span class="ikona">📈</span><span class="etykieta">Progres</span>
-    </button>
-    <button class="zakladka" data-ekran="ustawienia">
-      <span class="ikona">⚙️</span><span class="etykieta">Ustaw.</span>
-    </button>
-  </nav>
+  <!-- ===================== ODTWARZACZ ROZCIĄGANIA (cały ekran) ===================== -->
+  <div class="nakladka odtwarzacz-nakladka" id="odtwarzacz-rozc" hidden>
+    <div class="odtwarzacz">
+      <p class="odtw-postep" id="odtw-postep"></p>
+      <p class="odtw-faza" id="odtw-faza"></p>
+      <p class="odtw-czas" id="odtw-czas">30</p>
+      <p class="odtw-pozycja" id="odtw-pozycja"></p>
+      <p class="odtw-nastepne" id="odtw-nastepne"></p>
+      <div class="odtw-sterowanie">
+        <button class="przycisk wtorny" id="odtw-pauza">Pauza</button>
+        <button class="przycisk wtorny" id="odtw-pomin">Pomiń ⏭</button>
+      </div>
+      <button class="przycisk tekstowy" id="odtw-zakoncz">Zakończ</button>
+    </div>
+  </div>
 
   <script src="storage.js"></script>
   <script src="okna.js"></script>
@@ -345,6 +360,7 @@
   <script src="waga.js"></script>
   <script src="jedzenie.js"></script>
   <script src="progres.js"></script>
+  <script src="rozciaganie.js"></script>
   <script src="kopia.js"></script>
   <script src="app.js"></script>
 </body>

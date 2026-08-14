@@ -36,6 +36,18 @@ const DOMYSLNE_CWICZENIA = {
   'Wyciskanie nogami':             'Nogi'
 };
 
+/* Pozycje rozciągania wpisywane automatycznie przy pierwszym uruchomieniu. */
+const DOMYSLNE_POZYCJE_ROZCIAGANIA = [
+  'Skłon w przód (proste nogi)',
+  'Rozciąganie klatki w drzwiach',
+  'Koci grzbiet',
+  'Gołąb — biodra',
+  'Rozciąganie czworogłowego stojąc',
+  'Skłon do nóg w siadzie',
+  'Rozciąganie barku w poprzek',
+  'Skręt tułowia leżąc'
+];
+
 /* Krótki, niepowtarzalny identyfikator (np. dla ćwiczenia albo treningu). */
 function nowyId() {
   return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
@@ -132,6 +144,8 @@ function pustaBaza() {
     aktywnyTrening: null,  // trening rozpoczęty, jeszcze nie zakończony
     pomiaryWagi: [],       // waga ciała
     posilki: [],           // zjedzone posiłki (kalorie i białko)
+    rozciaganie: DOMYSLNE_POZYCJE_ROZCIAGANIA.map(nazwa => ({ id: nowyId(), nazwa: nazwa })),
+    zestawyRozciagania: [], // gotowe zestawy rozciągania (z timerem)
     profil: {              // dane do liczenia dziennego celu kcal i białka
       wiek: 24,
       wzrost: 180,         // cm

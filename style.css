@@ -54,7 +54,10 @@ body {
 /* ---------- górny pasek ---------- */
 .naglowek {
   flex: 0 0 auto;
-  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px;
   border-bottom: 1px solid var(--obwodka);
   background: var(--tlo);
 }
@@ -63,6 +66,19 @@ body {
   font-size: 26px;
   font-weight: 700;
 }
+.hamburger {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  margin-left: -6px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--tekst);
+  font-size: 24px;
+  cursor: pointer;
+}
+.hamburger:active { opacity: 0.5; }
 
 /* ---------- obszar treści (przewijany) ---------- */
 #tresc {
@@ -70,7 +86,8 @@ body {
   min-height: 0;              /* pozwala przewijać wnętrze zamiast rozpychać ekran */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 16px 16px 24px;   /* pasek zakładek jest już poza tym obszarem */
+  /* dolny margines uwzględnia wskaźnik domowy iPhone'a (nie ma już paska na dole) */
+  padding: 16px 16px calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
 .podpis {
@@ -831,33 +848,95 @@ body {
 }
 .okno-male .przycisk { margin: 10px 0 0; }
 
-/* ---------- dolny pasek zakładek ---------- */
-/* Dolny pasek jest zwykłym elementem na końcu kolumny (nie „fixed”), dzięki
-   czemu zawsze siedzi nad wskaźnikiem domowym i nie chowa się za paskiem
-   Safari. Wysokość rośnie o bezpieczny margines iPhone'a. */
-.zakladki {
-  flex: 0 0 auto;
-  display: flex;
-  height: calc(var(--wys-zakladek) + var(--bezpieczny-dol));
-  padding-bottom: var(--bezpieczny-dol);
-  background: #12161c;
-  border-top: 1px solid var(--obwodka);
+/* ---------- boczne menu (szuflada) ---------- */
+/* Nakładka przyciemnia treść, panel wjeżdża z lewej NAD nią — nic się nie ściska. */
+.szuflada-nakladka {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(0, 0, 0, 0.6);
 }
-.zakladka {
-  flex: 1 1 0;
+.szuflada-nakladka[hidden] { display: none; }
+.szuflada-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 82%;
+  max-width: 300px;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 12px
+           calc(env(safe-area-inset-bottom, 0px) + 16px);
+  background: #12161c;
+  border-right: 1px solid var(--obwodka);
+  overflow-y: auto;
+  animation: wjazd-menu 0.18s ease-out;
+}
+@keyframes wjazd-menu { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+
+.szuflada-tytul {
+  margin: 4px 12px 12px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--tekst-szary);
+}
+.pozycja-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--tekst);
+  font-family: inherit;
+  font-size: 18px;
+  text-align: left;
+  cursor: pointer;
+}
+.pozycja-menu .ikona { font-size: 22px; }
+.pozycja-menu.aktywna { background: var(--karta-jasna); color: var(--akcent); }
+.pozycja-menu:active  { opacity: 0.6; }
+
+/* ---------- odtwarzacz rozciągania (cały ekran) ---------- */
+.odtwarzacz-nakladka {
+  align-items: stretch;
+  justify-content: center;
+  background: var(--tlo);
+  z-index: 80;
+}
+.odtwarzacz {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  border: none;
-  background: none;
-  color: var(--tekst-szary);
-  font-family: inherit;
-  cursor: pointer;
-  padding: 0;
+  text-align: center;
+  width: 100%;
+  max-width: 480px;
+  padding: 24px 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
 }
-.zakladka .ikona    { font-size: 21px; line-height: 1; }
-.zakladka .etykieta { font-size: 10px; letter-spacing: -0.2px; }
-.zakladka.aktywna   { color: var(--akcent); }
-.zakladka:active    { opacity: 0.6; }
+.odtw-postep { margin: 0 0 20px; font-size: 16px; color: var(--tekst-szary); }
+.odtw-faza {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.odtw-faza.faza-trzymanie, .odtw-czas.faza-trzymanie { color: var(--zielony); }
+.odtw-faza.faza-przerwa,   .odtw-czas.faza-przerwa   { color: var(--pomarancz); }
+.odtw-faza.spelniony { color: var(--zielony); font-size: 64px; }
+.odtw-czas {
+  margin: 0;
+  font-size: 120px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -3px;
+}
+.odtw-pozycja { margin: 16px 0 6px; font-size: 28px; font-weight: 700; line-height: 1.2; }
+.odtw-nastepne { margin: 0 0 32px; font-size: 16px; color: var(--tekst-szary); }
+.odtw-sterowanie { display: flex; gap: 12px; width: 100%; }
+.odtw-sterowanie .przycisk { margin: 0; }
+#odtw-zakoncz { margin-top: 8px; }

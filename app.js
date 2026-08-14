@@ -4,12 +4,13 @@
 
 /* Nazwy ekranów i tytuły w górnym pasku. */
 const EKRANY = {
-  trening:    'Trening',
-  cwiczenia:  'Ćwiczenia',
-  waga:       'Waga ciała',
-  historia:   'Historia',
-  progres:    'Progres',
-  ustawienia: 'Ustawienia'
+  trening:     'Trening',
+  rozciaganie: 'Rozciąganie',
+  cwiczenia:   'Ćwiczenia',
+  waga:        'Waga ciała',
+  historia:    'Historia',
+  progres:     'Progres',
+  ustawienia:  'Ustawienia'
 };
 
 /* Skrót, żeby nie pisać za każdym razem document.getElementById. */
@@ -30,8 +31,8 @@ function pokazEkran(nazwa) {
     el('ekran-' + klucz).hidden = (klucz !== nazwa);
   });
 
-  // podświetl zakładkę na dole
-  document.querySelectorAll('.zakladka').forEach(przycisk => {
+  // podświetl pozycję w bocznym menu
+  document.querySelectorAll('.pozycja-menu').forEach(przycisk => {
     przycisk.classList.toggle('aktywna', przycisk.dataset.ekran === nazwa);
   });
 
@@ -52,8 +53,15 @@ function odswiezEkran(nazwa) {
   if (nazwa === 'waga')       wejscieNaWage();
   if (nazwa === 'historia')   wejscieNaHistorie();
   if (nazwa === 'progres')    wejscieNaProgres();
+  if (nazwa === 'rozciaganie') wejscieNaRozciaganie();
   if (nazwa === 'ustawienia') rysujUstawienia();
 }
+
+/* --------------------------------------------------------------------------
+   Boczne menu — nakłada się na treść, nie ściska jej
+   -------------------------------------------------------------------------- */
+function otworzMenu()  { el('szuflada').hidden = false; }
+function zamknijMenu() { el('szuflada').hidden = true; }
 
 /* --------------------------------------------------------------------------
    Ekran „Ustawienia” — podgląd tego, co siedzi w pamięci
@@ -117,9 +125,14 @@ function wlaczTrybOffline() {
    Start aplikacji
    -------------------------------------------------------------------------- */
 function start() {
-  // kliknięcia w dolne zakładki
-  document.querySelectorAll('.zakladka').forEach(przycisk => {
-    przycisk.addEventListener('click', () => pokazEkran(przycisk.dataset.ekran));
+  // boczne menu
+  el('btn-menu').addEventListener('click', otworzMenu);
+  document.querySelectorAll('.pozycja-menu').forEach(przycisk => {
+    przycisk.addEventListener('click', () => { pokazEkran(przycisk.dataset.ekran); zamknijMenu(); });
+  });
+  // kliknięcie w przyciemnione tło zamyka menu
+  el('szuflada').addEventListener('click', zdarzenie => {
+    if (zdarzenie.target === el('szuflada')) zamknijMenu();
   });
 
   podepnijOkna();
@@ -132,6 +145,7 @@ function start() {
   podepnijWage();
   podepnijJedzenie();
   podepnijProgres();
+  podepnijRozciaganie();
   podepnijKopie();
 
   // Rozpoczęty trening jest ważniejszy niż ostatnio oglądana zakładka —
