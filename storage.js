@@ -131,9 +131,19 @@ function pustaBaza() {
     treningi: [],          // zakończone treningi
     aktywnyTrening: null,  // trening rozpoczęty, jeszcze nie zakończony
     pomiaryWagi: [],       // waga ciała
+    posilki: [],           // zjedzone posiłki (kalorie i białko)
+    profil: {              // dane do liczenia dziennego celu kcal i białka
+      wiek: 24,
+      wzrost: 180,         // cm
+      plec: 'm',           // m | k
+      tryb: 'poza',        // poza | sezon (współczynnik aktywności)
+      nadwyzka: 400,       // kcal ponad zapotrzebowanie (budowa masy)
+      bialkoNaKg: 2.0      // g białka na kg masy ciała
+    },
     ustawienia: {
       ostatniaZakladka: 'trening',
       skalaWagi: 'dzien',        // dzien | tydzien | miesiac
+      sekcjaWagi: 'waga',        // waga | jedzenie — podzakładka ekranu Waga
       ostatniaKopia: null,       // kiedy ostatnio zapisano kopię danych
       przypominajOKopii: 'tydzien'   // dzien | tydzien | miesiac | nigdy
     }
@@ -151,7 +161,8 @@ function wczytajDane() {
 
     // Doklejamy brakujące pola — dzięki temu starsze dane nie wysypią aplikacji.
     const polaczone = Object.assign(baza, wczytane, {
-      ustawienia: Object.assign(baza.ustawienia, wczytane.ustawienia || {})
+      ustawienia: Object.assign(baza.ustawienia, wczytane.ustawienia || {}),
+      profil: Object.assign(baza.profil, wczytane.profil || {})
     });
 
     uzupelnijKategorie(polaczone);

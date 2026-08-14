@@ -160,8 +160,10 @@ function zastapDane(nowe) {
 
   // doklejamy do świeżej bazy, żeby brakujące pola dostały wartości domyślne
   dane = Object.assign(baza, nowe, {
-    ustawienia: Object.assign(baza.ustawienia, nowe.ustawienia || {})
+    ustawienia: Object.assign(baza.ustawienia, nowe.ustawienia || {}),
+    profil: Object.assign(baza.profil, nowe.profil || {})
   });
+  uzupelnijKategorie(dane);   // stara kopia bez kategorii dostaje je po nazwie
   zapiszDane();
 
   // wszystkie ekrany od nowa

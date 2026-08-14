@@ -631,6 +631,73 @@ body {
 .w-dol     { color: var(--czerwony); }
 .bez-zmian { color: var(--tekst-szary); }
 
+/* ---------- jedzenie: kalorie i białko ---------- */
+/* górny przełącznik Waga / Jedzenie — nieco większy, bo to zmiana sekcji */
+#przelacznik-sekcji button { font-size: 16px; }
+
+/* glanceable podgląd celu na podzakładce Waga */
+.cel-inline {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  color: var(--tekst);
+  cursor: pointer;
+}
+.cel-inline .podpis-karty { display: block; }
+.cel-inline-liczby { font-size: 22px; font-weight: 700; }
+.cel-inline-liczby b { font-weight: 700; }
+.cel-inline-link {
+  display: block;
+  margin-top: 8px;
+  font-size: 15px;
+  color: var(--akcent);
+}
+.cel-inline:active { opacity: 0.7; }
+
+/* karta „Dziś — cel”, obwódka koloruje werdykt po 22:00 i dla dni minionych */
+.cel-karta.spelniony    { border-color: var(--zielony); }
+.cel-karta.niespelniony { border-color: var(--czerwony); }
+
+.blok-postepu { margin: 14px 0; }
+.glowa-postepu {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+.etykieta-postepu { font-size: 15px; color: var(--tekst-szary); }
+.liczby-postepu { font-size: 17px; }
+.liczby-postepu b { font-size: 19px; font-weight: 700; }
+.cel-postepu { color: var(--tekst-szary); }
+
+.pasek-postepu {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--karta-jasna);
+  overflow: hidden;
+}
+.wypelnienie {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--akcent);
+  transition: width 0.2s;
+}
+.wypelnienie.spelniony    { background: var(--zielony); }
+.wypelnienie.niespelniony { background: var(--czerwony); }
+
+.podsumowanie-celu { margin: 6px 0 0; font-size: 15px; }
+
+/* lista posiłków i dni */
+.wpis-posilku { gap: 8px; }
+.nazwa-posilku { display: block; font-size: 17px; }
+.makro-posilku { font-size: 14px; color: var(--tekst-szary); }
+
+.wpis-dnia-jedzenia { gap: 8px; }
+.data-dnia { display: block; font-size: 16px; }
+.makro-dnia { font-size: 14px; color: var(--tekst-szary); }
+.werdykt { flex: 0 0 auto; font-size: 20px; font-weight: 700; }
+
 /* ---------- kopia zapasowa ---------- */
 .ostrzezenie { color: var(--pomarancz); }
 

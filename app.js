@@ -49,7 +49,7 @@ function pokazEkran(nazwa) {
 function odswiezEkran(nazwa) {
   if (nazwa === 'trening')    rysujTrening();
   if (nazwa === 'cwiczenia')  pokazKategorie(false);   // zawsze od listy ćwiczeń
-  if (nazwa === 'waga')       rysujWage();
+  if (nazwa === 'waga')       wejscieNaWage();
   if (nazwa === 'historia')   wejscieNaHistorie();
   if (nazwa === 'progres')    wejscieNaProgres();
   if (nazwa === 'ustawienia') rysujUstawienia();
@@ -67,6 +67,7 @@ function rysujUstawienia() {
   el('licznik-rozmiar').textContent   = rozmiarDanych();
 
   rysujKopie();
+  rysujProfil();
   pokazStanOffline();
 }
 
@@ -129,6 +130,7 @@ function start() {
   podepnijZestawy();
   podepnijHistorie();
   podepnijWage();
+  podepnijJedzenie();
   podepnijProgres();
   podepnijKopie();
 

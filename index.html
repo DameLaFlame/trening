@@ -118,34 +118,78 @@
 
     </section>
 
-    <!-- ---------- 3. WAGA ---------- -->
+    <!-- ---------- 3. WAGA (+ JEDZENIE) ---------- -->
     <section class="ekran" id="ekran-waga" hidden>
 
-      <div class="karta">
-        <label class="pole">
-          <span>Waga (kg)</span>
-          <input type="text" id="pole-wagi" inputmode="decimal" autocomplete="off"
-                 placeholder="np. 82,4">
-        </label>
-        <label class="pole odstep">
-          <span>Data pomiaru</span>
-          <input type="date" id="pole-daty-wagi">
-        </label>
-        <button class="przycisk" id="btn-zapisz-wage">Zapisz pomiar</button>
+      <div class="przelacznik" id="przelacznik-sekcji">
+        <button data-sekcja="waga">⚖️ Waga</button>
+        <button data-sekcja="jedzenie">🍽️ Jedzenie</button>
       </div>
 
-      <div class="przelacznik" id="przelacznik-skali">
-        <button data-skala="dzien">Dziennie</button>
-        <button data-skala="tydzien">Tygodniowo</button>
-        <button data-skala="miesiac">Miesięcznie</button>
+      <!-- podzakładka: waga ciała -->
+      <div id="sekcja-waga">
+        <div class="karta">
+          <label class="pole">
+            <span>Waga (kg)</span>
+            <input type="text" id="pole-wagi" inputmode="decimal" autocomplete="off"
+                   placeholder="np. 82,4">
+          </label>
+          <label class="pole odstep">
+            <span>Data pomiaru</span>
+            <input type="date" id="pole-daty-wagi">
+          </label>
+          <button class="przycisk" id="btn-zapisz-wage">Zapisz pomiar</button>
+        </div>
+
+        <div id="waga-cel-inline"></div>
+
+        <div class="przelacznik" id="przelacznik-skali">
+          <button data-skala="dzien">Dziennie</button>
+          <button data-skala="tydzien">Tygodniowo</button>
+          <button data-skala="miesiac">Miesięcznie</button>
+        </div>
+
+        <div id="waga-podsumowanie"></div>
+        <div id="waga-wykres"></div>
+
+        <p class="podpis"><span id="podpis-listy">Pomiary</span>
+          (<span id="ile-pomiarow">0</span>)</p>
+        <ul class="lista" id="lista-pomiarow"></ul>
       </div>
 
-      <div id="waga-podsumowanie"></div>
-      <div id="waga-wykres"></div>
+      <!-- podzakładka: jedzenie (kalorie i białko) -->
+      <div id="sekcja-jedzenie" hidden>
+        <div class="przelacznik" id="przelacznik-trybu">
+          <button data-tryb="poza">Poza sezonem</button>
+          <button data-tryb="sezon">W sezonie</button>
+        </div>
 
-      <p class="podpis"><span id="podpis-listy">Pomiary</span>
-        (<span id="ile-pomiarow">0</span>)</p>
-      <ul class="lista" id="lista-pomiarow"></ul>
+        <div id="jedzenie-cel"></div>
+
+        <div class="karta">
+          <label class="pole">
+            <span>Nazwa posiłku</span>
+            <input type="text" id="posilek-nazwa" placeholder="np. Owsianka z bananem"
+                   autocomplete="off" autocapitalize="sentences">
+          </label>
+          <div class="rzad-pol odstep">
+            <label class="pole">
+              <span>Kalorie</span>
+              <input type="text" id="posilek-kcal" inputmode="numeric" autocomplete="off">
+            </label>
+            <label class="pole">
+              <span>Białko (g)</span>
+              <input type="text" id="posilek-bialko" inputmode="decimal" autocomplete="off">
+            </label>
+          </div>
+          <button class="przycisk" id="btn-dodaj-posilek">Dodaj posiłek</button>
+        </div>
+
+        <p class="podpis">Dzisiejsze posiłki (<span id="ile-posilkow">0</span>)</p>
+        <ul class="lista" id="lista-posilkow"></ul>
+
+        <div id="jedzenie-historia"></div>
+      </div>
 
     </section>
 
@@ -182,6 +226,32 @@
         <div class="wiersz-info"><span>Pomiary wagi</span><b id="licznik-wagi">0</b></div>
         <div class="wiersz-info"><span>Rozpoczęty trening</span><b id="licznik-aktywny">nie</b></div>
         <div class="wiersz-info"><span>Zajęte miejsce</span><b id="licznik-rozmiar">0 KB</b></div>
+      </div>
+
+      <p class="podpis">Cele — kalorie i białko</p>
+      <div class="karta">
+        <div class="rzad-pol">
+          <label class="pole">
+            <span>Wiek</span>
+            <input type="text" id="profil-wiek" inputmode="numeric" autocomplete="off">
+          </label>
+          <label class="pole">
+            <span>Wzrost (cm)</span>
+            <input type="text" id="profil-wzrost" inputmode="numeric" autocomplete="off">
+          </label>
+        </div>
+        <div class="rzad-pol odstep">
+          <label class="pole">
+            <span>Nadwyżka (kcal)</span>
+            <input type="text" id="profil-nadwyzka" inputmode="numeric" autocomplete="off">
+          </label>
+          <label class="pole">
+            <span>Białko (g/kg)</span>
+            <input type="text" id="profil-bialko" inputmode="decimal" autocomplete="off">
+          </label>
+        </div>
+        <button class="przycisk" id="btn-zapisz-profil">Zapisz</button>
+        <p class="opis" id="profil-podglad"></p>
       </div>
 
       <p class="podpis">Kopia zapasowa</p>
@@ -273,6 +343,7 @@
   <script src="trening.js"></script>
   <script src="historia.js"></script>
   <script src="waga.js"></script>
+  <script src="jedzenie.js"></script>
   <script src="progres.js"></script>
   <script src="kopia.js"></script>
   <script src="app.js"></script>

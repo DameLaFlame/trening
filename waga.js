@@ -118,6 +118,7 @@ function rysujWage() {
     przycisk.classList.toggle('aktywna', przycisk.dataset.skala === skala);
   });
 
+  rysujCelInline();          // podgląd dziennego celu kcal/białka po zważeniu
   rysujPodsumowanieWagi(punkty, skala);
   rysujWykresWagi(punkty, skala);
   rysujListePomiarow(punkty, skala);
