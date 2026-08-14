@@ -492,6 +492,28 @@ body {
 .wpis-wyboru.juz-dodane .nazwa { color: var(--tekst-szary); }
 .wpis-wyboru:active { opacity: 0.6; }
 
+/* pole „nowa pozycja” na górze okna wyboru pozycji rozciągania */
+.wpis-nowa-pozycja {
+  display: flex !important;
+  gap: 8px;
+  padding: 8px 4px 14px !important;
+  border-bottom: 1px solid var(--obwodka);
+  margin-bottom: 6px;
+}
+.pole-nowej-pozycji {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--obwodka);
+  border-radius: 10px;
+  background: var(--karta-jasna);
+  color: var(--tekst);
+  font-family: inherit;
+  font-size: 16px;
+}
+.wpis-nowa-pozycja .przycisk { width: auto; margin: 0; padding: 0 18px; flex: 0 0 auto; }
+
 /* ---------- ekran „Historia” ---------- */
 .wpis-treningu { padding: 0 !important; display: block !important; }
 .wybor-treningu {

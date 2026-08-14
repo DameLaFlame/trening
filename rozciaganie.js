@@ -95,9 +95,10 @@ function rysujListeZestawowRozc(miejsce) {
       <button class="ikonka" data-akcja="usun" title="Usuń zestaw">🗑️</button>`;
 
     wpis.querySelector('.nazwa-zestawu').textContent = zestaw.nazwa;
+    const start = Number.isFinite(zestaw.czasStartowy) ? zestaw.czasStartowy : 10;
     wpis.querySelector('.podsumowanie').textContent =
       `${pozycje.length} ${odmien(pozycje.length, 'pozycja', 'pozycje', 'pozycji')} · ` +
-      `${zestaw.czasTrzymania}s trzymanie · ${zestaw.czasPrzerwy}s przerwa`;
+      `${start}s start · ${zestaw.czasTrzymania}s trzymanie · ${zestaw.czasPrzerwy}s przerwa`;
     wpis.querySelector('.cwiczenia-skrot').textContent =
       pozycje.length > 0 ? pozycje.map(p => p.nazwa).join(', ') : 'Zestaw jest pusty';
 
@@ -120,7 +121,7 @@ function rysujListeZestawowRozc(miejsce) {
   miejsce.appendChild(btnNowy);
 
   const btnPozycje = document.createElement('button');
-  btnPozycje.className = 'przycisk tekstowy neutralny';
+  btnPozycje.className = 'przycisk wtorny';
   btnPozycje.textContent = 'Pozycje do rozciągania';
   btnPozycje.addEventListener('click', () => { widokRozc = 'pozycje'; rysujRozciaganie(); el('tresc').scrollTop = 0; });
   miejsce.appendChild(btnPozycje);
@@ -128,7 +129,7 @@ function rysujListeZestawowRozc(miejsce) {
 
 /* --- widok B: edycja zestawu --- */
 function nowyZestawRozc() {
-  roboczyZestawRozc = { id: nowyId(), nazwa: '', pozycje: [], czasTrzymania: 30, czasPrzerwy: 5, nowy: true };
+  roboczyZestawRozc = { id: nowyId(), nazwa: '', pozycje: [], czasStartowy: 10, czasTrzymania: 30, czasPrzerwy: 5, nowy: true };
   widokRozc = 'zestaw';
   rysujRozciaganie();
   el('tresc').scrollTop = 0;
@@ -146,6 +147,9 @@ function otworzZestawRozcDoEdycji(id) {
 function rysujEdycjeZestawuRozc(miejsce) {
   const z = roboczyZestawRozc;
 
+  // starsze zestawy nie mają przygotowania — dokładamy domyślne 10 s
+  if (z.czasStartowy === undefined || z.czasStartowy === null) z.czasStartowy = 10;
+
   const naglowek = document.createElement('div');
   naglowek.className = 'karta';
   naglowek.innerHTML = `
@@ -153,6 +157,10 @@ function rysujEdycjeZestawuRozc(miejsce) {
       <span>Nazwa zestawu</span>
       <input type="text" id="rozc-nazwa" placeholder="np. Poranna rozgrzewka"
              autocomplete="off" autocapitalize="sentences">
+    </label>
+    <label class="pole odstep">
+      <span>Przygotowanie na start (s)</span>
+      <input type="text" id="rozc-start" inputmode="numeric" autocomplete="off">
     </label>
     <div class="rzad-pol odstep">
       <label class="pole">
@@ -167,10 +175,12 @@ function rysujEdycjeZestawuRozc(miejsce) {
   miejsce.appendChild(naglowek);
 
   el('rozc-nazwa').value = z.nazwa;
+  el('rozc-start').value = z.czasStartowy;
   el('rozc-trzymanie').value = z.czasTrzymania;
   el('rozc-przerwa').value = z.czasPrzerwy;
   // trzymamy nazwę i czasy w kopii na bieżąco, żeby nie zgubić ich przy dodawaniu pozycji
   el('rozc-nazwa').addEventListener('input', e => z.nazwa = e.target.value);
+  el('rozc-start').addEventListener('input', e => z.czasStartowy = e.target.value);
   el('rozc-trzymanie').addEventListener('input', e => z.czasTrzymania = e.target.value);
   el('rozc-przerwa').addEventListener('input', e => z.czasPrzerwy = e.target.value);
 
@@ -253,16 +263,25 @@ function przesunWZestawieRozc(numer, kierunek) {
   rysujRozciaganie();
 }
 
-/* Okno wyboru pozycji — korzysta z tej samej nakładki co wybór ćwiczenia. */
+/* Okno wyboru pozycji — korzysta z tej samej nakładki co wybór ćwiczenia.
+   Na górze jest pole do dodania zupełnie nowej pozycji, bez wychodzenia stąd. */
 function otworzWyborPozycjiRozc() {
   const lista = el('lista-wyboru');
   el('tytul-okna-wyboru').textContent = 'Wybierz pozycję';
   lista.innerHTML = '';
 
-  if (dane.rozciaganie.length === 0) {
-    lista.innerHTML = '<li class="pusty-wpis">Nie masz żadnych pozycji. ' +
-                      'Dodaj je w „Pozycje do rozciągania”.</li>';
-  }
+  // --- dodawanie nowej pozycji na miejscu ---
+  const formularz = document.createElement('li');
+  formularz.className = 'wpis-nowa-pozycja';
+  formularz.innerHTML = `
+    <input type="text" class="pole-nowej-pozycji" placeholder="Nowa pozycja…"
+           autocomplete="off" autocapitalize="sentences">
+    <button class="przycisk maly" data-akcja="dodaj-nowa">Dodaj</button>`;
+  const pole = formularz.querySelector('.pole-nowej-pozycji');
+  const dodajNowa = () => stworzPozycjeZPickera(pole.value);
+  formularz.querySelector('[data-akcja="dodaj-nowa"]').addEventListener('click', dodajNowa);
+  pole.addEventListener('keydown', e => { if (e.key === 'Enter') dodajNowa(); });
+  lista.appendChild(formularz);
 
   const juz = roboczyZestawRozc.pozycje;
 
@@ -289,6 +308,24 @@ function otworzWyborPozycjiRozc() {
   el('okno-wyboru').hidden = false;
 }
 
+/* Nowa pozycja utworzona wprost w oknie wyboru: dopisujemy ją do listy pozycji
+   i od razu do układanego zestawu, a okno odświeżamy. */
+function stworzPozycjeZPickera(wartosc) {
+  const nazwa = wartosc.trim();
+  if (!nazwa) { powiadom('Wpisz nazwę pozycji.'); return; }
+
+  let pozycja = dane.rozciaganie.find(p => p.nazwa.toLowerCase() === nazwa.toLowerCase());
+  if (!pozycja) {
+    pozycja = { id: nowyId(), nazwa: nazwa };
+    dane.rozciaganie.push(pozycja);
+    zapiszDane();
+  }
+
+  roboczyZestawRozc.pozycje.push(pozycja.id);
+  rysujRozciaganie();       // odśwież listę pozycji w zestawie pod spodem
+  otworzWyborPozycjiRozc(); // odśwież okno — pole znów puste, gotowe na kolejną
+}
+
 /* Liczba z pola — dodatnia liczba całkowita w rozsądnym zakresie. */
 function czasZPola(wartosc, min, max) {
   const n = parseInt(String(wartosc).trim(), 10);
@@ -303,6 +340,8 @@ function zapiszZestawRozc() {
   if (!nazwa) { powiadom('Nazwij zestaw, np. „Poranna rozgrzewka”.'); return; }
   if (z.pozycje.length === 0) { powiadom('Zestaw musi mieć co najmniej jedną pozycję.'); return; }
 
+  const start = czasZPola(z.czasStartowy, 0, 300);
+  if (start === null) { powiadom('Czas przygotowania wpisz w sekundach (0–300).'); return; }
   const trzymanie = czasZPola(z.czasTrzymania, 5, 600);
   if (trzymanie === null) { powiadom('Czas trzymania wpisz w sekundach (5–600).'); return; }
   const przerwa = czasZPola(z.czasPrzerwy, 0, 300);
@@ -310,7 +349,7 @@ function zapiszZestawRozc() {
 
   const zapisywany = {
     id: z.id, nazwa: nazwa, pozycje: [...z.pozycje],
-    czasTrzymania: trzymanie, czasPrzerwy: przerwa
+    czasStartowy: start, czasTrzymania: trzymanie, czasPrzerwy: przerwa
   };
 
   const i = dane.zestawyRozciagania.findIndex(x => x.id === z.id);
@@ -467,14 +506,19 @@ function startZestawRozc(zestawId) {
     return;
   }
 
+  // starsze zestawy mogą nie mieć przygotowania — wtedy domyślnie 10 s
+  const czasStartowy = Number.isFinite(zestaw.czasStartowy) ? zestaw.czasStartowy : 10;
+  const zPrzygotowaniem = czasStartowy > 0;
+
   odtw = {
     nazwy: pozycje.map(p => p.nazwa),
+    czasStartowy: czasStartowy,
     trzymanie: zestaw.czasTrzymania,
     przerwa: zestaw.czasPrzerwy,
     idx: 0,
-    faza: 'trzymanie',
-    pozostalo: zestaw.czasTrzymania,
-    koniecFazy: Date.now() + zestaw.czasTrzymania * 1000,
+    faza: zPrzygotowaniem ? 'przygotowanie' : 'trzymanie',
+    pozostalo: zPrzygotowaniem ? czasStartowy : zestaw.czasTrzymania,
+    koniecFazy: Date.now() + (zPrzygotowaniem ? czasStartowy : zestaw.czasTrzymania) * 1000,
     pauza: false,
     timer: null,
     audio: null,
@@ -494,7 +538,7 @@ function startZestawRozc(zestawId) {
   el('odtwarzacz-rozc').hidden = false;
   odtw.timer = setInterval(tykOdtwarzacza, 200);
   rysujOdtwarzacz();
-  bip(880, 0.12);   // sygnał startu
+  dzwiek(zPrzygotowaniem ? 'przygotowanie' : 'start');
 }
 
 function tykOdtwarzacza() {
@@ -505,7 +549,7 @@ function tykOdtwarzacza() {
   // ciche „tyknięcia” na 3, 2, 1 sekundę przed zmianą
   if (odtw.pozostalo <= 3 && odtw.pozostalo > 0 && odtw.ostatniBip !== odtw.pozostalo) {
     odtw.ostatniBip = odtw.pozostalo;
-    bip(500, 0.06);
+    dzwiek('tik');
   }
 
   if (Date.now() >= odtw.koniecFazy) {
@@ -515,31 +559,43 @@ function tykOdtwarzacza() {
   }
 }
 
+/* Ustawia bieżącą fazę na trzymanie kolejnej pozycji i gra sygnał startu. */
+function zacznijTrzymanie() {
+  odtw.faza = 'trzymanie';
+  odtw.pozostalo = odtw.trzymanie;
+  odtw.koniecFazy = Date.now() + odtw.trzymanie * 1000;
+  dzwiek('start');   // dźwięk na start każdej pozycji
+}
+
 function nastepnaFaza() {
   odtw.ostatniBip = null;
 
-  if (odtw.faza === 'trzymanie') {
+  if (odtw.faza === 'przygotowanie') {
+    // koniec przygotowania -> pierwsza pozycja
+    zacznijTrzymanie();
+
+  } else if (odtw.faza === 'trzymanie') {
     const ostatnia = odtw.idx === odtw.nazwy.length - 1;
-    if (ostatnia) { zakonczOdtwarzacz(true); return; }
+    if (ostatnia) {
+      zakonczOdtwarzacz(true);   // sygnał końca zestawu jest w środku
+      return;
+    }
+
+    dzwiek('koniec-pozycji');   // dźwięk na koniec każdej pozycji
 
     if (odtw.przerwa > 0) {
       odtw.faza = 'przerwa';
       odtw.pozostalo = odtw.przerwa;
       odtw.koniecFazy = Date.now() + odtw.przerwa * 1000;
-      bip(400, 0.15);
     } else {
       odtw.idx++;
-      odtw.pozostalo = odtw.trzymanie;
-      odtw.koniecFazy = Date.now() + odtw.trzymanie * 1000;
-      bip(880, 0.12);
+      zacznijTrzymanie();
     }
+
   } else {
     // koniec przerwy -> następna pozycja
     odtw.idx++;
-    odtw.faza = 'trzymanie';
-    odtw.pozostalo = odtw.trzymanie;
-    odtw.koniecFazy = Date.now() + odtw.trzymanie * 1000;
-    bip(880, 0.12);
+    zacznijTrzymanie();
   }
 
   rysujOdtwarzacz();
@@ -561,20 +617,32 @@ function rysujOdtwarzacz() {
     return;
   }
 
-  const trzymanie = odtw.faza === 'trzymanie';
-  el('odtw-faza').textContent = trzymanie ? 'Trzymaj' : 'Przerwa';
-  el('odtw-faza').className = 'odtw-faza ' + (trzymanie ? 'faza-trzymanie' : 'faza-przerwa');
   el('odtw-czas').textContent = odtw.pozostalo;
-  el('odtw-czas').className = 'odtw-czas ' + (trzymanie ? 'faza-trzymanie' : 'faza-przerwa');
 
-  if (trzymanie) {
+  if (odtw.faza === 'przygotowanie') {
+    // przed pierwszą pozycją — daj czas na ustawienie się
+    el('odtw-faza').textContent = 'Start za';
+    el('odtw-faza').className = 'odtw-faza faza-przerwa';
+    el('odtw-czas').className = 'odtw-czas faza-przerwa';
+    el('odtw-postep').textContent = 'Przygotuj się';
+    el('odtw-pozycja').textContent = odtw.nazwy[0];
+    el('odtw-nastepne').textContent = 'Pierwsza pozycja';
+
+  } else if (odtw.faza === 'trzymanie') {
     // trzymanie: duża nazwa bieżącej pozycji, pod spodem co dalej
     const nastepna = odtw.nazwy[odtw.idx + 1];
+    el('odtw-faza').textContent = 'Trzymaj';
+    el('odtw-faza').className = 'odtw-faza faza-trzymanie';
+    el('odtw-czas').className = 'odtw-czas faza-trzymanie';
     el('odtw-postep').textContent = `Pozycja ${odtw.idx + 1} / ${odtw.nazwy.length}`;
     el('odtw-pozycja').textContent = odtw.nazwy[odtw.idx];
     el('odtw-nastepne').textContent = nastepna ? 'Następne: ' + nastepna : 'To ostatnia pozycja';
+
   } else {
     // przerwa: duża nazwa pozycji, do której się szykujesz
+    el('odtw-faza').textContent = 'Przerwa';
+    el('odtw-faza').className = 'odtw-faza faza-przerwa';
+    el('odtw-czas').className = 'odtw-czas faza-przerwa';
     el('odtw-postep').textContent = `Za chwilę pozycja ${odtw.idx + 2} / ${odtw.nazwy.length}`;
     el('odtw-pozycja').textContent = odtw.nazwy[odtw.idx + 1];
     el('odtw-nastepne').textContent = 'Przygotuj się';
@@ -614,7 +682,7 @@ function zakonczOdtwarzacz(ukonczony) {
   if (ukonczony) {
     odtw.faza = 'koniec';
     odtw.pauza = false;
-    bip(1046, 0.25);   // wyższy sygnał końca
+    dzwiek('koniec');   // trzynutowy sygnał końca zestawu
     rysujOdtwarzacz();
     puscEkran();
     // zostawiamy nakładkę z ekranem „Gotowe”, zamknie ją przycisk
@@ -640,21 +708,35 @@ function zakonczZOdtwarzacza() {
 }
 
 /* --- dźwięk i utrzymanie ekranu --- */
-function bip(czestotliwosc, dlugosc) {
+
+/* Pojedynczy ton o zadanej częstotliwości, zagrany z opóźnieniem od teraz. */
+function ton(czestotliwosc, opoznienie, dlugosc) {
   if (!odtw || !odtw.audio) return;
   try {
-    if (odtw.audio.state === 'suspended') odtw.audio.resume();
-    const o = odtw.audio.createOscillator();
-    const g = odtw.audio.createGain();
+    const a = odtw.audio;
+    if (a.state === 'suspended') a.resume();
+    const t0 = a.currentTime + opoznienie;
+    const o = a.createOscillator();
+    const g = a.createGain();
     o.type = 'sine';
     o.frequency.value = czestotliwosc;
-    g.gain.setValueAtTime(0.18, odtw.audio.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, odtw.audio.currentTime + dlugosc);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.22, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dlugosc);
     o.connect(g);
-    g.connect(odtw.audio.destination);
-    o.start();
-    o.stop(odtw.audio.currentTime + dlugosc);
+    g.connect(a.destination);
+    o.start(t0);
+    o.stop(t0 + dlugosc + 0.02);
   } catch (e) { /* dźwięk to dodatek — brak nie przeszkadza */ }
+}
+
+/* Zestawy dźwięków. Start pozycji: rosnący, koniec: opadający — nie do pomylenia. */
+function dzwiek(typ) {
+  if (typ === 'start')              { ton(660, 0, 0.12);  ton(990, 0.12, 0.18); }
+  else if (typ === 'koniec-pozycji') { ton(880, 0, 0.12);  ton(520, 0.13, 0.20); }
+  else if (typ === 'przygotowanie') { ton(520, 0, 0.14); }
+  else if (typ === 'tik')           { ton(500, 0, 0.06); }
+  else if (typ === 'koniec')        { ton(660, 0, 0.16);  ton(880, 0.16, 0.16);  ton(1170, 0.32, 0.34); }
 }
 
 function trzymajEkranWlaczony() {
