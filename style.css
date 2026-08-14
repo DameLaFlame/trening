@@ -2,20 +2,23 @@
    style.css — ciemny motyw, duże elementy, pod ekran iPhone'a (~390 px)
    ========================================================================== */
 
-/* --- kolory w jednym miejscu, łatwo zmienić --- */
+/* --- kolory w jednym miejscu, łatwo zmienić (motyw „Dark Rock”) --- */
 :root {
-  --tlo:          #0d0f12;   /* tło aplikacji */
-  --karta:        #1a1e24;   /* tło kafelków */
-  --karta-jasna:  #242a32;   /* pola, elementy listy */
-  --obwodka:      #313842;
-  --tekst:        #f2f4f7;
-  --tekst-szary:  #9aa4b2;
-  --akcent:       #0a84ff;   /* niebieski – główne przyciski */
-  --zielony:      #30d158;
-  --czerwony:     #ff453a;
-  --pomarancz:    #ff9f0a;   /* przypomnienie o kopii zapasowej */
+  --tlo:          #0B0D10;   /* tło główne */
+  --tlo-alt:      #0F1115;   /* tło alternatywne (menu boczne) */
+  --karta:        #14171B;   /* tło kafelków */
+  --karta-jasna:  #1B1F24;   /* pola, elementy listy (karta poziom 2) */
+  --przycisk:     #22272D;   /* tło przycisków */
+  --obwodka:      #2C3137;
+  --tekst:        #E7E9EC;   /* tekst główny */
+  --tekst-szary:  #8E949C;   /* tekst drugorzędny / pomocniczy */
+  --akcent:       #9BA7B4;   /* akcent (stan aktywny, wyróżnienia) */
+  --akcent-hover: #AEB8C3;
+  --zielony:      #7E9A88;   /* sukces */
+  --czerwony:     #9B7777;   /* błąd */
+  --uwaga:        #B49A7E;   /* uwaga: przypomnienie, przerwa w rozciąganiu */
 
-  --wys-zakladek: 62px;      /* wysokość dolnego paska */
+  --wys-zakladek: 62px;      /* wysokość dolnego paska (już nieużywana) */
   --bezpieczny-dol: env(safe-area-inset-bottom, 0px);
 }
 
@@ -163,16 +166,16 @@ body {
   width: 100%;
   min-height: 56px;
   margin: 10px 0 4px;
-  border: none;
+  border: 1px solid var(--obwodka);
   border-radius: 12px;
-  background: var(--akcent);
-  color: #fff;
+  background: var(--przycisk);
+  color: var(--tekst);
   font-size: 18px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
 }
-.przycisk:active { opacity: 0.75; }
+.przycisk:active { opacity: 0.7; }
 
 .przycisk.duzy {
   min-height: 88px;
@@ -180,12 +183,12 @@ body {
   margin-bottom: 18px;
 }
 .przycisk.wtorny {
-  background: var(--karta-jasna);
+  background: transparent;
   color: var(--tekst);
   border: 1px solid var(--obwodka);
 }
-.przycisk.zielony  { background: var(--zielony); color: #06240f; }
-.przycisk.czerwony { background: var(--czerwony); color: #fff; }
+.przycisk.zielony  { background: var(--zielony); color: #0B0D10; border-color: var(--zielony); }
+.przycisk.czerwony { background: var(--czerwony); color: #17100F; border-color: var(--czerwony); }
 .przycisk.maly     { min-height: 46px; font-size: 16px; }
 .przycisk.tekstowy {
   background: none;
@@ -250,7 +253,7 @@ body {
   -webkit-appearance: none;
   appearance: none;
   /* strzałka narysowana w miejscu, żeby nic nie dogrywać z internetu */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%239aa4b2' d='M1 1.5h10L6 7z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%238E949C' d='M1 1.5h10L6 7z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 16px center;
   background-size: 12px;
@@ -273,8 +276,8 @@ body {
   margin-bottom: 14px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: rgba(48, 209, 88, 0.12);
-  border: 1px solid rgba(48, 209, 88, 0.35);
+  background: rgba(126, 154, 136, 0.14);
+  border: 1px solid rgba(126, 154, 136, 0.4);
   font-size: 15px;
   color: var(--zielony);
 }
@@ -648,7 +651,7 @@ body {
 }
 .przelacznik button.aktywna {
   background: var(--akcent);
-  color: #fff;
+  color: var(--tlo);
 }
 
 /* lista pomiarów */
@@ -738,7 +741,7 @@ body {
 .werdykt { flex: 0 0 auto; font-size: 20px; font-weight: 700; }
 
 /* ---------- kopia zapasowa ---------- */
-.ostrzezenie { color: var(--pomarancz); }
+.ostrzezenie { color: var(--uwaga); }
 
 .pasek-przypomnienia {
   display: flex;
@@ -748,14 +751,14 @@ body {
   margin-bottom: 18px;
   padding: 14px;
   border-radius: 12px;
-  background: rgba(255, 159, 10, 0.12);
-  border: 1px solid rgba(255, 159, 10, 0.35);
+  background: rgba(180, 154, 126, 0.14);
+  border: 1px solid rgba(180, 154, 126, 0.4);
 }
 .tresc-przypomnienia {
   flex: 1 1 150px;
   font-size: 15px;
   line-height: 1.35;
-  color: var(--pomarancz);
+  color: var(--uwaga);
 }
 .pasek-przypomnienia .przycisk {
   flex: 0 0 auto;
@@ -888,7 +891,7 @@ body {
   max-width: 300px;
   padding: calc(env(safe-area-inset-top, 0px) + 16px) 12px
            calc(env(safe-area-inset-bottom, 0px) + 16px);
-  background: #12161c;
+  background: var(--tlo-alt);
   border-right: 1px solid var(--obwodka);
   overflow-y: auto;
   animation: wjazd-menu 0.18s ease-out;
@@ -948,7 +951,7 @@ body {
   letter-spacing: 1px;
 }
 .odtw-faza.faza-trzymanie, .odtw-czas.faza-trzymanie { color: var(--zielony); }
-.odtw-faza.faza-przerwa,   .odtw-czas.faza-przerwa   { color: var(--pomarancz); }
+.odtw-faza.faza-przerwa,   .odtw-czas.faza-przerwa   { color: var(--uwaga); }
 .odtw-faza.spelniony { color: var(--zielony); font-size: 64px; }
 .odtw-czas {
   margin: 0;
