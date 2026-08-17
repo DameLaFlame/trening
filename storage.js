@@ -146,6 +146,7 @@ function pustaBaza() {
     posilki: [],           // zjedzone posiłki (kalorie i białko)
     rozciaganie: DOMYSLNE_POZYCJE_ROZCIAGANIA.map(nazwa => ({ id: nowyId(), nazwa: nazwa })),
     zestawyRozciagania: [], // gotowe zestawy rozciągania (z timerem)
+    rozciaganieDaty: [],    // dni (ISO), w które ukończono zestaw — do liczenia serii
     profil: {              // dane do liczenia dziennego celu kcal i białka
       wiek: 24,
       wzrost: 180,         // cm

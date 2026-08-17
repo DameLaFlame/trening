@@ -39,6 +39,100 @@ function formatujCzas(sekundy) {
 }
 
 /* --------------------------------------------------------------------------
+   Seria (streak) — dni z rzędu z ukończonym rozciąganiem
+   -------------------------------------------------------------------------- */
+
+/* Dni rozciągania, bez powtórek, od najstarszego. */
+function dniRozciagania() {
+  return [...new Set(dane.rozciaganieDaty || [])].sort();
+}
+
+/* Ile dni różnicy między dwiema datami ISO. */
+function roznicaDni(isoA, isoB) {
+  const a = new Date(isoA + 'T12:00:00');
+  const b = new Date(isoB + 'T12:00:00');
+  return Math.round((b - a) / 86400000);
+}
+
+/* Aktualna seria — liczy się tylko, gdy ostatni raz był dziś albo wczoraj. */
+function aktualnaSeria() {
+  const dni = dniRozciagania();
+  if (dni.length === 0) return 0;
+
+  const dzis = dzisiajISO();
+  const wczoraj = isoZDaty(new Date(Date.now() - 86400000));
+  const ostatni = dni[dni.length - 1];
+  if (ostatni !== dzis && ostatni !== wczoraj) return 0;   // seria przerwana
+
+  let seria = 1;
+  for (let i = dni.length - 1; i > 0; i--) {
+    if (roznicaDni(dni[i - 1], dni[i]) === 1) seria++;
+    else break;
+  }
+  return seria;
+}
+
+/* Najdłuższa seria w historii. */
+function rekordSerii() {
+  const dni = dniRozciagania();
+  if (dni.length === 0) return 0;
+
+  let rekord = 1, biezaca = 1;
+  for (let i = 1; i < dni.length; i++) {
+    biezaca = roznicaDni(dni[i - 1], dni[i]) === 1 ? biezaca + 1 : 1;
+    if (biezaca > rekord) rekord = biezaca;
+  }
+  return rekord;
+}
+
+function ostatnieRozciaganie() {
+  const dni = dniRozciagania();
+  return dni.length ? dni[dni.length - 1] : null;
+}
+
+/* Zapis dnia — wołany po ukończeniu zestawu. Jeden wpis na dzień. */
+function zapiszDzienRozciagania() {
+  if (!Array.isArray(dane.rozciaganieDaty)) dane.rozciaganieDaty = [];
+  const dzis = dzisiajISO();
+  if (!dane.rozciaganieDaty.includes(dzis)) {
+    dane.rozciaganieDaty.push(dzis);
+    zapiszDane();
+  }
+}
+
+/* Trzy kafelki: seria, rekord, ostatnio. */
+function rysujStatystykiRozc(miejsce) {
+  const seria = aktualnaSeria();
+  const rekord = rekordSerii();
+  const ostatni = ostatnieRozciaganie();
+
+  const kafelki = document.createElement('div');
+  kafelki.className = 'kafelki-statystyk';
+  kafelki.innerHTML = `
+    <div class="kafelek-stat">
+      <span class="stat-liczba">🔥 <b></b></span>
+      <span class="stat-podpis"></span>
+    </div>
+    <div class="kafelek-stat">
+      <span class="stat-liczba"><b></b></span>
+      <span class="stat-podpis">rekord serii</span>
+    </div>
+    <div class="kafelek-stat">
+      <span class="stat-liczba stat-data"><b></b></span>
+      <span class="stat-podpis">ostatnio</span>
+    </div>`;
+
+  const liczby = kafelki.querySelectorAll('.stat-liczba b');
+  liczby[0].textContent = seria;
+  liczby[1].textContent = rekord;
+  liczby[2].textContent = ostatni ? formatujDate(ostatni) : '—';
+  kafelki.querySelector('.kafelek-stat .stat-podpis').textContent =
+    odmien(seria, 'dzień z rzędu', 'dni z rzędu', 'dni z rzędu');
+
+  miejsce.appendChild(kafelki);
+}
+
+/* --------------------------------------------------------------------------
    Główne rysowanie — trzy widoki w #rozc-tresc
    -------------------------------------------------------------------------- */
 function wejscieNaRozciaganie() {
@@ -67,6 +161,8 @@ function przyciskPowrotuRozc(tekst, onClick) {
 
 /* --- widok A: lista zestawów --- */
 function rysujListeZestawowRozc(miejsce) {
+  rysujStatystykiRozc(miejsce);
+
   const podpis = document.createElement('p');
   podpis.className = 'podpis';
   podpis.textContent = 'Zestawy rozciągania';
@@ -510,6 +606,7 @@ function startZestawRozc(zestawId) {
   const czasStartowy = Number.isFinite(zestaw.czasStartowy) ? zestaw.czasStartowy : 10;
   const zPrzygotowaniem = czasStartowy > 0;
 
+  const pierwszyCzas = zPrzygotowaniem ? czasStartowy : zestaw.czasTrzymania;
   odtw = {
     nazwy: pozycje.map(p => p.nazwa),
     czasStartowy: czasStartowy,
@@ -517,8 +614,9 @@ function startZestawRozc(zestawId) {
     przerwa: zestaw.czasPrzerwy,
     idx: 0,
     faza: zPrzygotowaniem ? 'przygotowanie' : 'trzymanie',
-    pozostalo: zPrzygotowaniem ? czasStartowy : zestaw.czasTrzymania,
-    koniecFazy: Date.now() + (zPrzygotowaniem ? czasStartowy : zestaw.czasTrzymania) * 1000,
+    czasFazy: pierwszyCzas,      // pełna długość bieżącej fazy — do okręgu
+    pozostalo: pierwszyCzas,
+    koniecFazy: Date.now() + pierwszyCzas * 1000,
     pauza: false,
     timer: null,
     audio: null,
@@ -536,7 +634,7 @@ function startZestawRozc(zestawId) {
   document.addEventListener('visibilitychange', ponowWakeLock);
 
   el('odtwarzacz-rozc').hidden = false;
-  odtw.timer = setInterval(tykOdtwarzacza, 200);
+  odtw.timer = setInterval(tykOdtwarzacza, 100);   // 100 ms = płynny okrąg
   rysujOdtwarzacz();
   dzwiek(zPrzygotowaniem ? 'przygotowanie' : 'start');
 }
@@ -562,6 +660,7 @@ function tykOdtwarzacza() {
 /* Ustawia bieżącą fazę na trzymanie kolejnej pozycji i gra sygnał startu. */
 function zacznijTrzymanie() {
   odtw.faza = 'trzymanie';
+  odtw.czasFazy = odtw.trzymanie;
   odtw.pozostalo = odtw.trzymanie;
   odtw.koniecFazy = Date.now() + odtw.trzymanie * 1000;
   dzwiek('start');   // dźwięk na start każdej pozycji
@@ -585,6 +684,7 @@ function nastepnaFaza() {
 
     if (odtw.przerwa > 0) {
       odtw.faza = 'przerwa';
+      odtw.czasFazy = odtw.przerwa;
       odtw.pozostalo = odtw.przerwa;
       odtw.koniecFazy = Date.now() + odtw.przerwa * 1000;
     } else {
@@ -614,6 +714,7 @@ function rysujOdtwarzacz() {
     el('odtw-pauza').hidden = true;
     el('odtw-pomin').hidden = true;
     el('odtw-zakoncz').textContent = 'Zamknij';
+    ustawKrag('faza-trzymanie', 1);   // pełny zielony okrąg = ukończone
     return;
   }
 
@@ -652,6 +753,28 @@ function rysujOdtwarzacz() {
   el('odtw-pomin').hidden = false;
   el('odtw-pauza').textContent = odtw.pauza ? 'Wznów' : 'Pauza';
   el('odtw-zakoncz').textContent = 'Zakończ';
+
+  const kolor = odtw.faza === 'trzymanie' ? 'faza-trzymanie' : 'faza-przerwa';
+  ustawKrag(kolor, ulamekFazy());
+}
+
+/* Ile fazy zostało, jako ułamek 0..1 (płynnie, na potrzeby okręgu). */
+function ulamekFazy() {
+  if (!odtw || !odtw.czasFazy) return 0;
+  const sekundy = odtw.pauza
+    ? odtw.pozostalo                                   // w pauzie okrąg stoi
+    : (odtw.koniecFazy - Date.now()) / 1000;           // płynnie między tyknięciami
+  return Math.max(0, Math.min(1, sekundy / odtw.czasFazy));
+}
+
+/* Ustawia kolor i wypełnienie okręgu (ułamek = ile jeszcze zostało). */
+function ustawKrag(klasaKoloru, ulamek) {
+  const luk = el('odtw-luk');
+  if (!luk) return;
+  const obwod = 2 * Math.PI * 45;   // promień 45 w viewBox 100×100
+  luk.style.strokeDasharray = obwod.toFixed(2);
+  luk.style.strokeDashoffset = (obwod * (1 - ulamek)).toFixed(2);
+  luk.setAttribute('class', 'odtw-luk ' + klasaKoloru);
 }
 
 function pauzaOdtwarzacza() {
@@ -682,7 +805,8 @@ function zakonczOdtwarzacz(ukonczony) {
   if (ukonczony) {
     odtw.faza = 'koniec';
     odtw.pauza = false;
-    dzwiek('koniec');   // trzynutowy sygnał końca zestawu
+    zapiszDzienRozciagania();   // dzień zaliczony do serii
+    dzwiek('koniec');           // trzynutowy sygnał końca zestawu
     rysujOdtwarzacz();
     puscEkran();
     // zostawiamy nakładkę z ekranem „Gotowe”, zamknie ją przycisk

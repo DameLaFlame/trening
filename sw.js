@@ -10,7 +10,7 @@
    którą już ma.
    ========================================================================== */
 
-const WERSJA = 'silownia-v9';
+const WERSJA = 'silownia-v10';
 
 /* Ścieżki są względne („./”), żeby aplikacja działała też w podkatalogu —
    a tak właśnie wygląda adres na GitHub Pages. */
