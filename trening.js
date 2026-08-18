@@ -13,6 +13,7 @@ function edytorTreningu() {
   return {
     trening: dane.aktywnyTrening,
     pokazPodpowiedz: true,
+    pokazNotatke: true,
     kopiujSerie: true,
     poZmianie: przerysuj => {
       zapiszDane();
@@ -53,34 +54,122 @@ function rysujEkranStartu() {
   const przypomnienie = pasekPrzypomnienia();
   if (przypomnienie) miejsce.appendChild(przypomnienie);
 
-  const ostatni = treningiOdNajnowszych()[0];
-  const karta = document.createElement('div');
+  const treningi = treningiOdNajnowszych();
 
-  if (!ostatni) {
+  if (treningi.length === 0) {
+    const karta = document.createElement('div');
     karta.className = 'karta pusto';
     karta.innerHTML = '<p>Nie masz jeszcze żadnego zapisanego treningu.<br>' +
                       'Kliknij duży przycisk powyżej i zaczynamy.</p>';
-  } else {
-    const ileSerii = ostatni.cwiczenia.reduce((suma, w) => suma + w.serie.length, 0);
-    karta.className = 'karta';
-    karta.innerHTML = `
-      <p class="podpis-karty">Ostatni trening — ${formatujDate(ostatni.data)}</p>
-      <p class="opis">${ostatni.cwiczenia.length}
-        ${odmien(ostatni.cwiczenia.length, 'ćwiczenie', 'ćwiczenia', 'ćwiczeń')},
-        ${ileSerii} ${odmien(ileSerii, 'seria', 'serie', 'serii')}</p>
-      <ul class="mini-lista"></ul>`;
-
-    const lista = karta.querySelector('.mini-lista');
-    ostatni.cwiczenia.forEach(wpis => {
-      const pozycja = document.createElement('li');
-      pozycja.innerHTML = '<b></b><span></span>';
-      pozycja.querySelector('b').textContent = wpis.nazwa;
-      pozycja.querySelector('span').textContent = opisListySerii(wpis.serie);
-      lista.appendChild(pozycja);
-    });
+    miejsce.appendChild(karta);
+    return;
   }
 
-  miejsce.appendChild(karta);
+  rysujStatystykiTreningu(miejsce, treningi);
+}
+
+/* --------------------------------------------------------------------------
+   Statystyki pod zestawami (zamiast podglądu ostatniego treningu)
+   -------------------------------------------------------------------------- */
+/* Dwa kafelki (treningi w tym roku · ostatni trening) + lista partii, których
+   dawno nie było na treningu. */
+function rysujStatystykiTreningu(miejsce, treningi) {
+  const rok = new Date().getFullYear();
+  const wTymRoku = treningi.filter(t =>
+    new Date(t.data + 'T12:00:00').getFullYear() === rok).length;
+  const ostatni = treningi[0];
+
+  const kafelki = document.createElement('div');
+  kafelki.className = 'kafelki-statystyk';
+  kafelki.innerHTML = `
+    <div class="kafelek-stat">
+      <span class="stat-liczba"><b></b></span>
+      <span class="stat-podpis"></span>
+    </div>
+    <div class="kafelek-stat">
+      <span class="stat-liczba stat-data"><b></b></span>
+      <span class="stat-podpis">ostatni trening</span>
+    </div>`;
+  const liczby = kafelki.querySelectorAll('.stat-liczba b');
+  liczby[0].textContent = wTymRoku;
+  liczby[1].textContent = ostatni ? formatujDate(ostatni.data) : '—';
+  kafelki.querySelector('.stat-podpis').textContent =
+    odmien(wTymRoku, 'trening w tym roku', 'treningi w tym roku', 'treningów w tym roku');
+  miejsce.appendChild(kafelki);
+
+  rysujZaniedbanePartie(miejsce);
+}
+
+/* Partie mięśniowe (kategorie), których nie było na treningu od ponad 7 dni
+   albo wcale. Ostatni trening danej partii bierzemy po kategorii ćwiczeń. */
+function rysujZaniedbanePartie(miejsce) {
+  const dzis = new Date(dzisiajISO() + 'T12:00:00');
+  const dniOd = iso => Math.round((dzis - new Date(iso + 'T12:00:00')) / 86400000);
+
+  // najświeższa data treningu dla każdej kategorii
+  const ostatnieDaty = {};
+  dane.treningi.forEach(trening => {
+    trening.cwiczenia.forEach(wpis => {
+      const cwiczenie = znajdzCwiczenie(wpis.cwiczenieId);
+      if (!cwiczenie || !cwiczenie.kategoriaId) return;
+      const dotad = ostatnieDaty[cwiczenie.kategoriaId];
+      if (!dotad || trening.data > dotad) ostatnieDaty[cwiczenie.kategoriaId] = trening.data;
+    });
+  });
+
+  // tylko kategorie, które mają jakiekolwiek ćwiczenie (inne trudno „trenować”)
+  const maCwiczenia = {};
+  dane.cwiczenia.forEach(c => { if (c.kategoriaId) maCwiczenia[c.kategoriaId] = true; });
+
+  const zaniedbane = dane.kategorie
+    .filter(k => maCwiczenia[k.id])
+    .map(k => ({ nazwa: k.nazwa, data: ostatnieDaty[k.id] || null }))
+    .filter(p => p.data === null || dniOd(p.data) > 7)
+    .sort((a, b) => {
+      if (a.data === null) return b.data === null ? 0 : -1;   // „nigdy” na górze
+      if (b.data === null) return 1;
+      return a.data.localeCompare(b.data);                    // najstarsze wyżej
+    });
+
+  const podpis = document.createElement('p');
+  podpis.className = 'podpis';
+  podpis.textContent = 'Dawno nie trenowane';
+  miejsce.appendChild(podpis);
+
+  if (zaniedbane.length === 0) {
+    const karta = document.createElement('div');
+    karta.className = 'karta pusto';
+    karta.innerHTML = '<p>Wszystkie partie trenowane w ostatnim tygodniu. ' +
+                      'Dobra robota! 💪</p>';
+    miejsce.appendChild(karta);
+    return;
+  }
+
+  const lista = document.createElement('ul');
+  lista.className = 'lista';
+  zaniedbane.forEach(partia => {
+    const li = document.createElement('li');
+    li.className = 'wpis-partii';
+    li.innerHTML = `
+      <span class="opis-pomiaru">
+        <b class="nazwa-partii"></b>
+        <span class="data-partii"></span>
+      </span>
+      <span class="dni-partii"></span>`;
+    li.querySelector('.nazwa-partii').textContent = partia.nazwa;
+
+    if (partia.data === null) {
+      li.querySelector('.data-partii').textContent = 'jeszcze nietrenowane';
+      li.querySelector('.dni-partii').textContent = 'nigdy';
+    } else {
+      const dni = dniOd(partia.data);
+      li.querySelector('.data-partii').textContent = 'ostatnio ' + formatujDate(partia.data);
+      li.querySelector('.dni-partii').textContent =
+        dni + ' ' + odmien(dni, 'dzień', 'dni', 'dni');
+    }
+    lista.appendChild(li);
+  });
+  miejsce.appendChild(lista);
 }
 
 /* --- widok B: trening trwa --- */

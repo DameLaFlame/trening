@@ -161,7 +161,12 @@ function przyciskPowrotuRozc(tekst, onClick) {
 
 /* --- widok A: lista zestawów --- */
 function rysujListeZestawowRozc(miejsce) {
-  rysujStatystykiRozc(miejsce);
+  // duży niebieski przycisk startu — tak samo jak „Rozpocznij trening”
+  const btnStart = document.createElement('button');
+  btnStart.className = 'przycisk duzy';
+  btnStart.textContent = 'Rozpocznij rozciąganie';
+  btnStart.addEventListener('click', otworzWyborZestawuRozc);
+  miejsce.appendChild(btnStart);
 
   const podpis = document.createElement('p');
   podpis.className = 'podpis';
@@ -221,6 +226,51 @@ function rysujListeZestawowRozc(miejsce) {
   btnPozycje.textContent = 'Pozycje do rozciągania';
   btnPozycje.addEventListener('click', () => { widokRozc = 'pozycje'; rysujRozciaganie(); el('tresc').scrollTop = 0; });
   miejsce.appendChild(btnPozycje);
+
+  // statystyki (seria / rekord / ostatnio) na samym dole
+  const podpisStat = document.createElement('p');
+  podpisStat.className = 'podpis odstep-nad';
+  podpisStat.textContent = 'Twoja seria';
+  miejsce.appendChild(podpisStat);
+  rysujStatystykiRozc(miejsce);
+}
+
+/* Okno wyboru zestawu po kliknięciu niebieskiego „Rozpocznij rozciąganie”.
+   Korzysta z tej samej nakładki co wybór ćwiczenia/zestawu w Treningu. */
+function otworzWyborZestawuRozc() {
+  if (dane.zestawyRozciagania.length === 0) {
+    powiadom('Najpierw ułóż zestaw rozciągania — przycisk „+ Nowy zestaw” poniżej.');
+    return;
+  }
+
+  const lista = el('lista-wyboru');
+  el('tytul-okna-wyboru').textContent = 'Wybierz zestaw';
+  lista.innerHTML = '';
+
+  dane.zestawyRozciagania.forEach(zestaw => {
+    const pozycje = pozycjeZestawu(zestaw);
+
+    const wpis = document.createElement('li');
+    wpis.className = 'wpis-wyboru';
+    wpis.innerHTML = `
+      <button class="wybor">
+        <span class="nazwa"></span>
+        <span class="podpowiedz"></span>
+      </button>`;
+    wpis.querySelector('.nazwa').textContent = zestaw.nazwa;
+    wpis.querySelector('.podpowiedz').textContent = pozycje.length > 0
+      ? `${pozycje.length} ${odmien(pozycje.length, 'pozycja', 'pozycje', 'pozycji')}`
+      : 'Zestaw jest pusty';
+
+    wpis.querySelector('.wybor').addEventListener('click', () => {
+      zamknijWyborCwiczenia();
+      startZestawRozc(zestaw.id);
+    });
+
+    lista.appendChild(wpis);
+  });
+
+  el('okno-wyboru').hidden = false;
 }
 
 /* --- widok B: edycja zestawu --- */

@@ -123,6 +123,17 @@ function kartaCwiczenia(wpis, edytor) {
     podpowiedz.remove();
   }
 
+  // notatka przy ćwiczeniu — tylko w trwającym treningu (edytor.pokazNotatke).
+  // Żółty pasek pojawia się dopiero, gdy notatka ma treść; pusta = dyskretny
+  // przycisk „Dodaj notatkę”. Notatka siedzi przy ćwiczeniu, więc sama
+  // przenosi się na kolejne treningi tego ćwiczenia.
+  if (edytor.pokazNotatke) {
+    const obszarNotatki = document.createElement('div');
+    obszarNotatki.className = 'notatka-obszar';
+    karta.querySelector('.serie').insertAdjacentElement('beforebegin', obszarNotatki);
+    rysujNotatke(obszarNotatki, wpis, edytor);
+  }
+
   const listaSerii = karta.querySelector('.serie');
   wpis.serie.forEach((seria, numer) => {
     listaSerii.appendChild(wierszSerii(wpis, seria, numer, edytor));
@@ -144,6 +155,71 @@ function kartaCwiczenia(wpis, edytor) {
   }
 
   return karta;
+}
+
+/* --------------------------------------------------------------------------
+   Notatka przy ćwiczeniu (żółty pasek w trwającym treningu)
+   --------------------------------------------------------------------------
+   Notatkę trzymamy przy samym ćwiczeniu (dane.cwiczenia), nie przy treningu —
+   dzięki temu przy następnym treningu tego ćwiczenia od razu ją widać.
+   -------------------------------------------------------------------------- */
+let notatkaWEdycji = null;   // id wpisu ćwiczenia, którego notatkę teraz piszemy
+
+function rysujNotatke(obszar, wpis, edytor) {
+  obszar.innerHTML = '';
+  const cwiczenie = znajdzCwiczenie(wpis.cwiczenieId);
+  const tekst = cwiczenie && cwiczenie.notatka ? cwiczenie.notatka : '';
+
+  // tryb pisania: pole tekstowe + zapisz / anuluj
+  if (notatkaWEdycji === wpis.id) {
+    obszar.innerHTML = `
+      <textarea class="notatka-pole" rows="2"
+                placeholder="np. ławka na 4, ściągaj łopatki"></textarea>
+      <div class="rzad">
+        <button class="przycisk maly" data-akcja="zapisz-notatke">Zapisz notatkę</button>
+        <button class="przycisk maly wtorny" data-akcja="anuluj-notatke">Anuluj</button>
+      </div>`;
+    const pole = obszar.querySelector('.notatka-pole');
+    pole.value = tekst;
+    pole.focus();
+    pole.setSelectionRange(pole.value.length, pole.value.length);
+
+    obszar.querySelector('[data-akcja="zapisz-notatke"]')
+      .addEventListener('click', () => zapiszNotatke(obszar, wpis, edytor, pole.value));
+    obszar.querySelector('[data-akcja="anuluj-notatke"]')
+      .addEventListener('click', () => { notatkaWEdycji = null; rysujNotatke(obszar, wpis, edytor); });
+    return;
+  }
+
+  // jest notatka: żółty pasek z jej treścią, klik = poprawianie
+  if (tekst) {
+    const pasek = document.createElement('button');
+    pasek.className = 'notatka-pasek';
+    pasek.innerHTML = '<span class="notatka-ikona">📝</span><span class="notatka-tekst"></span>';
+    pasek.querySelector('.notatka-tekst').textContent = tekst;
+    pasek.addEventListener('click', () => { notatkaWEdycji = wpis.id; rysujNotatke(obszar, wpis, edytor); });
+    obszar.appendChild(pasek);
+    return;
+  }
+
+  // brak notatki: dyskretny przycisk, ŻADNEGO żółtego paska
+  const dodaj = document.createElement('button');
+  dodaj.className = 'notatka-dodaj';
+  dodaj.textContent = '📝 Dodaj notatkę';
+  dodaj.addEventListener('click', () => { notatkaWEdycji = wpis.id; rysujNotatke(obszar, wpis, edytor); });
+  obszar.appendChild(dodaj);
+}
+
+function zapiszNotatke(obszar, wpis, edytor, wartosc) {
+  const cwiczenie = znajdzCwiczenie(wpis.cwiczenieId);
+  if (cwiczenie) {
+    const tekst = wartosc.trim();
+    if (tekst) cwiczenie.notatka = tekst;
+    else       delete cwiczenie.notatka;   // pusta notatka znika, żeby nie było żółtego paska
+    zapiszDane();
+  }
+  notatkaWEdycji = null;
+  rysujNotatke(obszar, wpis, edytor);
 }
 
 /* Przepisuje szare podpowiedzi do pustych serii — jednym kliknięciem,

@@ -14,6 +14,7 @@
   --zielony:      #30d158;
   --czerwony:     #ff453a;
   --pomarancz:    #ff9f0a;   /* przypomnienie o kopii zapasowej */
+  --zolty:        #ffd60a;   /* notatka przy ćwiczeniu */
 
   --wys-zakladek: 62px;      /* wysokość dolnego paska */
   --bezpieczny-dol: env(safe-area-inset-bottom, 0px);
@@ -361,6 +362,62 @@ body {
   border-style: dashed;
 }
 
+/* ---------- notatka przy ćwiczeniu (trwający trening) ---------- */
+.notatka-obszar { margin: 8px 0 2px; }
+
+/* brak notatki: dyskretny przycisk, bez żółtego tła */
+.notatka-dodaj {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: var(--tekst-szary);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.notatka-dodaj:active { opacity: 0.6; }
+
+/* jest notatka: żółty pasek z treścią */
+.notatka-pasek {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 214, 10, 0.13);
+  border: 1px solid rgba(255, 214, 10, 0.5);
+  color: var(--tekst);
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+.notatka-pasek:active { opacity: 0.7; }
+.notatka-ikona { flex: 0 0 auto; }
+.notatka-tekst { flex: 1 1 auto; min-width: 0; white-space: pre-wrap; }
+
+.notatka-pole {
+  width: 100%;
+  min-height: 62px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 214, 10, 0.5);
+  border-radius: 10px;
+  background: var(--karta-jasna);
+  color: var(--tekst);
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.4;
+  resize: vertical;
+}
+.notatka-pole:focus { outline: 2px solid var(--zolty); outline-offset: -2px; }
+.notatka-obszar .rzad { margin-top: 8px; }
+
 /* mały przycisk-ikonka (kosz, ołówek, krzyżyk) */
 .ikonka {
   flex: 0 0 auto;
@@ -388,6 +445,21 @@ body {
 }
 .mini-lista b    { display: block; font-size: 16px; }
 .mini-lista span { font-size: 15px; color: var(--tekst-szary); }
+
+/* partie mięśniowe dawno nietrenowane (ekran startowy Treningu) */
+.wpis-partii { gap: 8px; }
+.nazwa-partii { display: block; font-size: 17px; }
+.data-partii { font-size: 14px; color: var(--tekst-szary); }
+.dni-partii {
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--pomarancz);
+}
+
+/* odstęp nad podpisem (np. statystyki na dole Rozciągania) */
+.podpis.odstep-nad { margin-top: 22px; }
 
 /* ---------- ekran „Ćwiczenia” ---------- */
 .wpis-cwiczenia { gap: 6px; }
@@ -736,6 +808,29 @@ body {
 .data-dnia { display: block; font-size: 16px; }
 .makro-dnia { font-size: 14px; color: var(--tekst-szary); }
 .werdykt { flex: 0 0 auto; font-size: 20px; font-weight: 700; }
+
+/* szybkie posiłki (presety) */
+#btn-zapisz-preset { margin-top: 8px; }
+.wpis-presetu { padding: 0 !important; gap: 4px; padding-right: 8px !important; }
+.wpis-presetu .wybor-presetu {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: block;
+  padding: 14px 8px 14px 16px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--tekst);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.wpis-presetu .wybor-presetu:active { opacity: 0.6; }
+.wpis-presetu .nazwa-presetu { display: block; font-size: 17px; font-weight: 600; }
+.wpis-presetu .makro-presetu { display: block; margin-top: 2px; font-size: 14px; color: var(--tekst-szary); }
+
+/* poprawianie posiłku w miejscu — pola jedno pod drugim */
+.wpis-posilku.wpis-edycja { gap: 0; }
 
 /* ---------- kopia zapasowa ---------- */
 .ostrzezenie { color: var(--pomarancz); }

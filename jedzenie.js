@@ -23,6 +23,9 @@
    `let`, żeby dało się nią sterować w testach. */
 let GODZINA_PODSUMOWANIA = 22;
 
+/* Id posiłku, który właśnie poprawiamy na liście „Dzisiejsze posiłki”. */
+let posilekWEdycji = null;
+
 /* --------------------------------------------------------------------------
    Liczenie celu
    -------------------------------------------------------------------------- */
@@ -100,6 +103,7 @@ function wejscieNaWage() {
 }
 
 function pokazSekcjeWagi(sekcja) {
+  posilekWEdycji = null;   // świeże wejście na ekran nie zostawia otwartej edycji
   dane.ustawienia.sekcjaWagi = sekcja;
   zapiszDane();
 
@@ -149,6 +153,7 @@ function rysujJedzenie() {
     b.classList.toggle('aktywna', b.dataset.tryb === dane.profil.tryb));
 
   rysujCelDnia();
+  rysujPresetyPosilkow();
   rysujListePosilkow();
   rysujHistorieJedzenia();
 }
@@ -235,6 +240,130 @@ function tekstPodsumowaniaCelu(cel, suma, zamkniety, spelniony) {
 }
 
 /* --------------------------------------------------------------------------
+   Szybkie posiłki (presety do powtarzania)
+   -------------------------------------------------------------------------- */
+function rysujPresetyPosilkow() {
+  const miejsce = el('jedzenie-presety');
+  miejsce.innerHTML = '';
+
+  const presety = dane.presetyPosilkow || [];
+  if (presety.length === 0) return;   // nic nie pokazujemy, gdy brak szybkich posiłków
+
+  const podpis = document.createElement('p');
+  podpis.className = 'podpis';
+  podpis.textContent = 'Szybkie posiłki — kliknij, aby dodać';
+  miejsce.appendChild(podpis);
+
+  const lista = document.createElement('ul');
+  lista.className = 'lista';
+
+  presety.forEach(preset => {
+    const pozycja = document.createElement('li');
+    pozycja.className = 'wpis-presetu';
+    pozycja.innerHTML = `
+      <button class="wybor-presetu">
+        <b class="nazwa-presetu"></b>
+        <span class="makro-presetu"></span>
+      </button>
+      <button class="ikonka mala" data-akcja="usun-preset" title="Usuń szybki posiłek">🗑️</button>`;
+
+    pozycja.querySelector('.nazwa-presetu').textContent = preset.nazwa;
+    pozycja.querySelector('.makro-presetu').textContent =
+      `${preset.kcal} kcal · ${formatujKg(preset.bialko)} g białka`;
+    pozycja.querySelector('.wybor-presetu')
+      .addEventListener('click', () => dodajPosilekZPresetu(preset.id));
+    pozycja.querySelector('[data-akcja="usun-preset"]')
+      .addEventListener('click', () => usunPreset(preset.id));
+
+    lista.appendChild(pozycja);
+  });
+
+  miejsce.appendChild(lista);
+}
+
+/* Kliknięcie w szybki posiłek dokłada go do dzisiejszych posiłków. */
+function dodajPosilekZPresetu(id) {
+  const preset = (dane.presetyPosilkow || []).find(p => p.id === id);
+  if (!preset) return;
+
+  dane.posilki.push({
+    id: nowyId(),
+    data: dzisiajISO(),
+    nazwa: preset.nazwa,
+    kcal: preset.kcal,
+    bialko: preset.bialko,
+    dodano: new Date().toISOString()
+  });
+  zapiszDane();
+  rysujJedzenie();
+}
+
+/* „Zapisz jako szybki posiłek” — bierze to, co wpisane w polach dodawania. */
+function zapiszPreset() {
+  const poleNazwa  = el('posilek-nazwa');
+  const poleKcal   = el('posilek-kcal');
+  const poleBialko = el('posilek-bialko');
+
+  const nazwa = poleNazwa.value.trim();
+  const kcal = naLiczbe(poleKcal.value);
+  const bialko = poleBialko.value.trim() === '' ? 0 : naLiczbe(poleBialko.value);
+
+  if (!nazwa) {
+    powiadom('Wpisz nazwę dania, np. „Owsianka z bananem”, a potem zapisz je jako szybki posiłek.');
+    return;
+  }
+  if (isNaN(kcal) || kcal < 0 || kcal > 10000) {
+    powiadom('Wpisz kalorie dania (liczbę).');
+    poleKcal.focus();
+    return;
+  }
+  if (isNaN(bialko) || bialko < 0 || bialko > 500) {
+    powiadom('Białko wpisz w gramach albo zostaw puste.');
+    poleBialko.focus();
+    return;
+  }
+  if (kcal === 0 && bialko === 0) {
+    powiadom('Danie musi mieć kalorie albo białko.');
+    return;
+  }
+
+  if (!Array.isArray(dane.presetyPosilkow)) dane.presetyPosilkow = [];
+
+  const istniejacy = dane.presetyPosilkow.find(
+    p => p.nazwa.toLowerCase() === nazwa.toLowerCase());
+
+  if (istniejacy) {
+    istniejacy.kcal = Math.round(kcal);
+    istniejacy.bialko = Math.round(bialko * 10) / 10;
+  } else {
+    dane.presetyPosilkow.push({
+      id: nowyId(),
+      nazwa: nazwa,
+      kcal: Math.round(kcal),
+      bialko: Math.round(bialko * 10) / 10
+    });
+  }
+  zapiszDane();
+
+  powiadom(istniejacy
+    ? `„${nazwa}” zaktualizowany w szybkich posiłkach.`
+    : `„${nazwa}” dodany do szybkich posiłków. Następnym razem dodasz go jednym kliknięciem.`);
+
+  rysujPresetyPosilkow();
+}
+
+function usunPreset(id) {
+  const preset = (dane.presetyPosilkow || []).find(p => p.id === id);
+  if (!preset) return;
+
+  zapytaj(`Usunąć „${preset.nazwa}” z szybkich posiłków?`, 'Usuń', () => {
+    dane.presetyPosilkow = dane.presetyPosilkow.filter(p => p.id !== id);
+    zapiszDane();
+    rysujPresetyPosilkow();
+  });
+}
+
+/* --------------------------------------------------------------------------
    Dzisiejsze posiłki
    -------------------------------------------------------------------------- */
 function rysujListePosilkow() {
@@ -250,22 +379,91 @@ function rysujListePosilkow() {
 
   posilki.forEach(posilek => {
     const pozycja = document.createElement('li');
+
+    // --- tryb poprawiania posiłku ---
+    if (posilekWEdycji === posilek.id) {
+      pozycja.className = 'wpis-posilku wpis-edycja';
+      pozycja.innerHTML = `
+        <label class="pole">
+          <span>Nazwa posiłku</span>
+          <input type="text" class="edp-nazwa" autocomplete="off" autocapitalize="sentences">
+        </label>
+        <div class="rzad-pol odstep">
+          <label class="pole">
+            <span>Kalorie</span>
+            <input type="text" class="edp-kcal" inputmode="numeric" autocomplete="off">
+          </label>
+          <label class="pole">
+            <span>Białko (g)</span>
+            <input type="text" class="edp-bialko" inputmode="decimal" autocomplete="off">
+          </label>
+        </div>
+        <div class="rzad">
+          <button class="przycisk maly" data-akcja="zapisz-posilek">Zapisz</button>
+          <button class="przycisk maly wtorny" data-akcja="anuluj-posilek">Anuluj</button>
+        </div>`;
+
+      pozycja.querySelector('.edp-nazwa').value = posilek.nazwa;
+      pozycja.querySelector('.edp-kcal').value = posilek.kcal;
+      pozycja.querySelector('.edp-bialko').value = formatujKg(posilek.bialko);
+
+      pozycja.querySelector('[data-akcja="zapisz-posilek"]')
+        .addEventListener('click', () => zapiszEdycjePosilku(posilek.id, pozycja));
+      pozycja.querySelector('[data-akcja="anuluj-posilek"]')
+        .addEventListener('click', () => { posilekWEdycji = null; rysujListePosilkow(); });
+
+      lista.appendChild(pozycja);
+      return;
+    }
+
+    // --- zwykły wiersz z posiłkiem ---
     pozycja.className = 'wpis-posilku';
     pozycja.innerHTML = `
       <span class="opis-pomiaru">
         <b class="nazwa-posilku"></b>
         <span class="makro-posilku"></span>
       </span>
+      <button class="ikonka mala" data-akcja="edytuj-posilek" title="Edytuj posiłek">✏️</button>
       <button class="ikonka mala" data-akcja="usun-posilek" title="Usuń posiłek">🗑️</button>`;
 
     pozycja.querySelector('.nazwa-posilku').textContent = posilek.nazwa;
     pozycja.querySelector('.makro-posilku').textContent =
       `${posilek.kcal} kcal · ${formatujKg(posilek.bialko)} g białka`;
+    pozycja.querySelector('[data-akcja="edytuj-posilek"]').addEventListener('click', () => {
+      posilekWEdycji = posilek.id;
+      rysujListePosilkow();
+      const pole = lista.querySelector('.edp-nazwa');
+      if (pole) { pole.focus(); pole.select(); }
+    });
     pozycja.querySelector('[data-akcja="usun-posilek"]')
       .addEventListener('click', () => usunPosilek(posilek.id));
 
     lista.appendChild(pozycja);
   });
+}
+
+/* Zapis poprawionego posiłku — te same sprawdzenia co przy dodawaniu. */
+function zapiszEdycjePosilku(id, pozycja) {
+  const posilek = dane.posilki.find(p => p.id === id);
+  if (!posilek) return;
+
+  const nazwa = pozycja.querySelector('.edp-nazwa').value.trim();
+  const kcal = naLiczbe(pozycja.querySelector('.edp-kcal').value);
+  const bialkoTekst = pozycja.querySelector('.edp-bialko').value.trim();
+  const bialko = bialkoTekst === '' ? 0 : naLiczbe(bialkoTekst);
+
+  if (!nazwa) { powiadom('Wpisz nazwę posiłku.'); return; }
+  if (isNaN(kcal) || kcal < 0 || kcal > 10000) { powiadom('Wpisz kalorie posiłku (liczbę).'); return; }
+  if (isNaN(bialko) || bialko < 0 || bialko > 500) { powiadom('Białko wpisz w gramach albo zostaw puste.'); return; }
+  if (kcal === 0 && bialko === 0) { powiadom('Posiłek musi mieć kalorie albo białko.'); return; }
+
+  posilek.nazwa = nazwa;
+  posilek.kcal = Math.round(kcal);
+  posilek.bialko = Math.round(bialko * 10) / 10;
+  zapiszDane();
+
+  posilekWEdycji = null;
+  rysujJedzenie();   // odświeża też cel dnia — suma się zmieniła
 }
 
 /* --------------------------------------------------------------------------
@@ -436,6 +634,7 @@ function podepnijJedzenie() {
     b.addEventListener('click', () => zmienTryb(b.dataset.tryb)));
 
   el('btn-dodaj-posilek').addEventListener('click', dodajPosilek);
+  el('btn-zapisz-preset').addEventListener('click', zapiszPreset);
   el('posilek-bialko').addEventListener('keydown', z => {
     if (z.key === 'Enter') dodajPosilek();
   });

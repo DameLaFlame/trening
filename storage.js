@@ -144,6 +144,7 @@ function pustaBaza() {
     aktywnyTrening: null,  // trening rozpoczęty, jeszcze nie zakończony
     pomiaryWagi: [],       // waga ciała
     posilki: [],           // zjedzone posiłki (kalorie i białko)
+    presetyPosilkow: [],   // szybkie posiłki do powtarzania (nazwa, kcal, białko)
     rozciaganie: DOMYSLNE_POZYCJE_ROZCIAGANIA.map(nazwa => ({ id: nowyId(), nazwa: nazwa })),
     zestawyRozciagania: [], // gotowe zestawy rozciągania (z timerem)
     rozciaganieDaty: [],    // dni (ISO), w które ukończono zestaw — do liczenia serii
