@@ -804,10 +804,54 @@ body {
 .nazwa-posilku { display: block; font-size: 17px; }
 .makro-posilku { font-size: 14px; color: var(--tekst-szary); }
 
-.wpis-dnia-jedzenia { gap: 8px; }
+/* dzień w historii — klikany, rozwija listę posiłków tego dnia */
+.wpis-dnia-jedzenia { display: block !important; padding: 0 !important; }
+.glowa-dnia-jedzenia {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--tekst);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.glowa-dnia-jedzenia:active { opacity: 0.6; }
 .data-dnia { display: block; font-size: 16px; }
 .makro-dnia { font-size: 14px; color: var(--tekst-szary); }
 .werdykt { flex: 0 0 auto; font-size: 20px; font-weight: 700; }
+.strzalka-dnia { flex: 0 0 auto; color: var(--tekst-szary); font-size: 14px; }
+
+/* rozwinięta lista posiłków danego dnia */
+.posilki-dnia { list-style: none; margin: 0; padding: 0; }
+.posilki-dnia:empty { display: none; }
+.wpis-dnia-jedzenia.rozwiniety .posilki-dnia {
+  padding: 2px 16px 12px;
+  border-top: 1px solid var(--obwodka);
+  margin-top: 2px;
+}
+.posilki-dnia li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  min-height: 0;
+  padding: 8px 0;
+  margin: 0;
+  border-bottom: 1px solid var(--obwodka);
+  font-size: 15px;
+}
+.posilki-dnia li:last-child { border-bottom: none; }
+.nazwa-posilku-h { flex: 1 1 auto; min-width: 0; }
+.makro-posilku-h { flex: 0 0 auto; color: var(--tekst-szary); font-size: 14px; white-space: nowrap; }
+.posilki-dnia .pusty-dzien { justify-content: center; color: var(--tekst-szary); }
 
 /* szybkie posiłki (presety) */
 #btn-zapisz-preset { margin-top: 8px; }
@@ -1124,3 +1168,28 @@ body {
 .odtw-sterowanie { display: flex; gap: 12px; width: 100%; }
 .odtw-sterowanie .przycisk { margin: 0; }
 #odtw-zakoncz { margin-top: 8px; }
+
+/* ---------- toast (zielone okienko, samo znika) ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+  z-index: 100;                 /* nad wszystkim, także nad nakładkami */
+  max-width: 88%;
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: var(--zielony);
+  color: #06240f;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 14px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.toast.widoczny {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}

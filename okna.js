@@ -49,6 +49,33 @@ function zamknijPytanie() {
   akcjaPoPotwierdzeniu = null;
 }
 
+/* --------------------------------------------------------------------------
+   Toast — zielone okienko, które samo znika po chwili
+   --------------------------------------------------------------------------
+   Do drobnych potwierdzeń („Dodano posiłek”), gdzie modalne okno „OK” byłoby
+   uciążliwe. Nie blokuje ekranu i gaśnie samo po ~1,8 s.
+   -------------------------------------------------------------------------- */
+let czasomierzToastu = null;
+
+function toast(tekst) {
+  let box = el('toast');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'toast';
+    box.className = 'toast';
+    document.body.appendChild(box);
+  }
+  box.textContent = tekst;
+
+  // restart animacji, gdy toasty lecą jeden po drugim
+  box.classList.remove('widoczny');
+  void box.offsetWidth;              // wymusza przeliczenie, żeby animacja ruszyła od nowa
+  box.classList.add('widoczny');
+
+  clearTimeout(czasomierzToastu);
+  czasomierzToastu = setTimeout(() => box.classList.remove('widoczny'), 1800);
+}
+
 /* Podpięcie przycisków — wołane raz, przy starcie aplikacji. */
 function podepnijOkna() {
   el('btn-potwierdz').addEventListener('click', () => {
